@@ -1,0 +1,21 @@
+project:
+  name: "XH-202602_Dongfeng_Voice_Control_AD"
+  module: "CARLA scenario construction and metric evaluation"
+  main_pipeline: "LMDrive/LangAuto + CARLA Leaderboard-compatible evaluation"
+
+global_design_principles:
+  - "优先保证可控、可重复、能稳定出结果"
+  - "参考现有 CARLA benchmark，不完全从零设计"
+  - "第一版采用短路线、固定 actor、固定触发点"
+  - "每个场景固定随机种子、固定路线、固定 spawn 点"
+
+dongfeng_scenarios:
+  basic_control:
+    first_version_scenarios: ["S01_keep_lane_speed", "S02_lane_change", "S03_intersection_turn"]
+    core_metrics: ["route_completion", "collision_count", "lane_invasion_count", "target_speed_error", "lane_change_success", "turn_success", "response_latency_ms"]
+  complex_obstacle:
+    first_version_scenarios: ["S04_pedestrian_slowdown", "S05_cone_detour", "S06_slow_vehicle_overtake"]
+    core_metrics: ["task_completion_rate", "collision_count", "safe_distance_violation", "min_distance_to_actor", "speed_drop", "detour_success", "subtask_missing_rate"]
+  emergency_response:
+    first_version_scenarios: ["S07_cut_in_brake", "S08_rain_night_danger_slowdown", "S09_construction_merge_stop"]
+    core_metrics: ["emergency_response_latency_ms", "collision_count", "min_ttc", "brake_reaction_success", "target_speed_limit_success", "merge_success"]

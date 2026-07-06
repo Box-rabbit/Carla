@@ -1,0 +1,2 @@
+scenario_id,category,success,task_completion_rate,collision_count,lane_invasion_count,red_light_violation_count,route_deviation_count,target_speed_error_kmh,mean_end_to_end_latency_ms,failure_reason
+S01_keep_lane_speed,basic_control,True,1.0,0,0,0,0,17.56764705882353,30.0,

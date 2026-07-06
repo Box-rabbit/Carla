@@ -1,0 +1,42 @@
+scenario_id: "S07_cut_in_brake"
+category: "emergency_response"
+version: "v0.1"
+description: "突发车辆加塞后的紧急避让/制动"
+runtime:
+  random_seed: 42
+  carla_version: "0.9.10.1"
+  fixed_delta_seconds: 0.05
+  max_duration_seconds: 120
+map:
+  town: "Town04"
+  weather: "CloudySunset"
+ego:
+  vehicle_type: "vehicle.tesla.model3"
+  spawn_point: {x: 0.0, y: 0.0, z: 0.3, yaw: 0.0}
+route:
+  route_file: "routes/dongfeng_emergency_response_example.xml"
+  route_id: 0
+actors:
+  vehicles: []
+  pedestrians: []
+  static_props: []
+instructions:
+  - id: "cmd_001"
+    trigger: {type: "time", value: 5.0}
+    text_zh: "突发车辆加塞，紧急避让"
+    text_en: "A vehicle is cutting in suddenly. Avoid it immediately."
+    intent:
+      type: "emergency_avoidance"
+      priority: "normal"
+    expected_subtasks: []
+success_criteria:
+  no_collision: true
+  route_completion_min: 0.90
+  max_response_latency_ms: 150
+failure_criteria:
+  collision: true
+  route_deviation: true
+  timeout: true
+  blocked: true
+metrics:
+  required: ["emergency_response_latency_ms", "min_ttc", "brake_reaction_success", "collision_count"]

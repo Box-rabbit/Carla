@@ -1,0 +1,15 @@
+[
+  {
+    "event": "speed_target_reached",
+    "timestamp": 13.0,
+    "speed_kmh": 52.0,
+    "target_speed_kmh": 60.0,
+    "tolerance_kmh": 8.0,
+    "success": true
+  },
+  {
+    "event": "task_success",
+    "timestamp": 19.950000000000003,
+    "success": true
+  }
+]

@@ -1,0 +1,10 @@
+metric_layers:
+  frame_logging:
+    output: "logs/{scenario_id}/frames.jsonl"
+    fields: ["timestamp", "frame", "scenario_id", "instruction_id", "ego_x", "ego_y", "ego_z", "ego_speed_kmh", "steer", "throttle", "brake", "collision", "lane_invasion", "red_light_violation", "route_deviation", "distance_to_front_actor", "asr_latency_ms", "parser_latency_ms", "model_latency_ms", "end_to_end_latency_ms"]
+  event_detection:
+    output: "logs/{scenario_id}/events.json"
+    events: ["instruction_triggered", "speed_target_reached", "lane_change_completed", "turn_completed", "stop_completed", "obstacle_avoided", "emergency_brake_started", "collision_happened", "violation_happened", "task_success", "task_failure"]
+  final_statistics:
+    output: "reports/{scenario_id}/evaluation_report.json"
+    metrics: ["task_completion_rate", "collision_count", "violation_count", "mean_response_latency_ms", "mean_end_to_end_latency_ms", "target_speed_error", "subtask_missing_rate", "action_success_rate", "route_completion"]
