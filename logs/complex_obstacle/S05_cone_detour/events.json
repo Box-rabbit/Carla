@@ -1,0 +1,42 @@
+[
+  {
+    "event": "cone_detected",
+    "timestamp": 0.0,
+    "nearest_cone_gap_ahead": 28.000006876726616,
+    "nearest_cone_distance": 28.00000672639444,
+    "detection_distance_m": 35.0
+  },
+  {
+    "event": "detour_started",
+    "timestamp": 0.0,
+    "nearest_cone_gap_ahead": 28.000006876726616,
+    "nearest_cone_distance": 28.00000672639444,
+    "detour_start_distance_m": 30.0,
+    "response_time_s": 0.0
+  },
+  {
+    "event": "detour_completed",
+    "timestamp": 10.65,
+    "reason": "no_cone_ahead",
+    "no_cone_ahead_hold_time": 1.0000000000000002,
+    "required_no_cone_ahead_hold_seconds": 1.0,
+    "min_distance_to_cone": 3.06148120383915,
+    "max_lateral_offset_m": 3.471814140285005
+  },
+  {
+    "event": "return_to_lane_completed",
+    "timestamp": 13.450000000000001,
+    "return_hold_time": 1.0000000000000002,
+    "required_return_hold_seconds": 1.0,
+    "lateral_offset_from_lane_center": -0.6216865787098129,
+    "return_lane_tolerance_m": 1.2,
+    "min_distance_to_cone": 3.06148120383915,
+    "min_safe_distance_to_cone_m": 1.5,
+    "max_lateral_offset_m": 3.473187812466037
+  },
+  {
+    "event": "task_success",
+    "timestamp": 13.450000000000001,
+    "success": true
+  }
+]

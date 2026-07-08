@@ -1,0 +1,83 @@
+scenario_id: S07_cut_in_brake
+category: emergency_response
+version: v0.3-realistic-urgent
+description: 真实城市道路范围内的前车切入急刹场景：相邻车道切入、短TTC、基于检测与TTC触发应急制动
+runtime:
+  random_seed: 42
+  carla_version: 0.9.10.1
+  fixed_delta_seconds: 0.05
+  max_duration_seconds: 120
+map:
+  town: Town03
+  weather: CloudySunset
+ego:
+  vehicle_type: vehicle.tesla.model3
+  spawn_point:
+    x: 0.0
+    y: 0.0
+    z: 0.3
+    yaw: 0.0
+route:
+  route_file: routes/emergency_response/dongfeng_emergency_response_example.xml
+  route_id: 0
+actors:
+  vehicles:
+  - id: cut_in_vehicle_001
+    type: vehicle.audi.tt
+    behavior: scripted_cut_in_then_brake
+    relative_to_ego:
+      longitudinal_distance_m: 26.0
+      lateral_offset_m: -3.5
+    cut_in_behavior:
+      cut_in_start_time_s: 2.0
+      cut_in_duration_s: 2.0
+      target_lateral_offset_m: 0.0
+      cruise_speed_kmh: 18.0
+      brake_start_after_cut_in_s: 0.5
+      brake_strength: 0.75
+  pedestrians: []
+  static_props: []
+instructions:
+- id: cmd_001
+  trigger:
+    type: time
+    value: 5.0
+  text_zh: 突发车辆加塞并急刹，立即制动保持安全距离
+  text_en: A vehicle cuts in suddenly and brakes. Brake immediately and keep a safe
+    distance.
+  intent:
+    type: emergency_brake
+    obstacle_type: cut_in_vehicle
+    priority: emergency
+  expected_subtasks: []
+success_criteria:
+  no_collision: true
+  cut_in_brake:
+    enabled: true
+    detection_distance_m: 45.0
+    front_corridor_half_width_m: 1.8
+    emergency_brake_distance_m: 17.0
+    emergency_brake_ttc_s: 3.0
+    safe_follow_distance_m: 7.0
+    safe_speed_kmh: 10.0
+    required_safe_follow_seconds: 1.0
+    max_response_time_seconds: 2.5
+    min_ttc_threshold_s: 3.0
+  max_response_latency_ms: 150
+failure_criteria:
+  collision: true
+  front_vehicle_collision: true
+  unsafe_ttc: true
+  unsafe_close_distance: true
+  route_deviation: true
+  timeout: true
+  blocked: true
+metrics:
+  required:
+  - cut_in_detected
+  - emergency_response_latency_ms
+  - min_ttc
+  - min_distance_to_front_vehicle
+  - brake_reaction_success
+  - safe_follow_success
+  - collision_count

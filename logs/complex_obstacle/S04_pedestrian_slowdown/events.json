@@ -1,0 +1,33 @@
+[
+  {
+    "event": "pedestrian_detected",
+    "timestamp": 2.7,
+    "distance_to_pedestrian": 29.993732452392578,
+    "detection_distance_m": 30.0
+  },
+  {
+    "event": "slowdown_started",
+    "timestamp": 4.5,
+    "distance_to_pedestrian": 21.86811637878418,
+    "slowdown_distance_m": 22.0,
+    "response_time_s": 1.7999999999999998
+  },
+  {
+    "event": "safe_slowdown_completed",
+    "timestamp": 5.7,
+    "ego_speed_kmh": 3.0897804099080286,
+    "distance_to_pedestrian": 19.496231079101562,
+    "safe_speed_kmh": 15.0,
+    "min_safe_distance_m": 6.0,
+    "slowdown_hold_time": 1.0000000000000002,
+    "required_slowdown_seconds": 1.0,
+    "min_distance_to_pedestrian": 19.496231079101562,
+    "max_speed_before_slowdown": 19.42343234332809,
+    "min_speed": 0.0
+  },
+  {
+    "event": "task_success",
+    "timestamp": 5.7,
+    "success": true
+  }
+]

@@ -1,0 +1,24 @@
+[
+  {
+    "event": "lane_change_started",
+    "timestamp": 5.0,
+    "initial_lane_id": 3,
+    "target_lane_id": 2,
+    "direction": "left"
+  },
+  {
+    "event": "lane_change_completed",
+    "timestamp": 8.25,
+    "initial_lane_id": 3,
+    "target_lane_id": 2,
+    "current_lane_id": 2,
+    "lane_change_duration_s": 3.25,
+    "target_lane_hold_s": 2.000000000000001,
+    "required_hold_seconds": 2.0
+  },
+  {
+    "event": "task_success",
+    "timestamp": 8.25,
+    "success": true
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "event": "cut_in_detected",
+    "timestamp": 3.0,
+    "front_vehicle_gap": 38.744094117064606,
+    "front_vehicle_distance": 38.78359945836434,
+    "front_vehicle_lateral_offset": -1.7500547022095887,
+    "ttc_s": null
+  },
+  {
+    "event": "emergency_brake_started",
+    "timestamp": 9.700000000000001,
+    "front_vehicle_gap": 16.946191424047413,
+    "front_vehicle_distance": 16.946190877363808,
+    "ttc_s": 3.071201849737792,
+    "emergency_brake_distance_m": 17.0,
+    "emergency_brake_ttc_s": 3.0,
+    "response_time_s": 6.700000000000001,
+    "max_response_time_seconds": 2.5,
+    "brake": 0.800000011920929
+  },
+  {
+    "event": "safe_brake_completed",
+    "timestamp": 11.0,
+    "front_vehicle_gap": 15.187592219369037,
+    "front_vehicle_distance": 15.18759169021879,
+    "ego_speed_kmh": 6.661587707384766e-05,
+    "safe_follow_distance_m": 7.0,
+    "safe_speed_kmh": 10.0,
+    "safe_follow_hold_time": 1.0000000000000002,
+    "required_safe_follow_seconds": 1.0,
+    "min_front_vehicle_distance": 15.18759169021879,
+    "min_front_gap": 15.187592219369037,
+    "min_ttc": 2.9834884204946945,
+    "max_brake": 0.800000011920929
+  },
+  {
+    "event": "task_success",
+    "timestamp": 11.0,
+    "success": true
+  }
+]

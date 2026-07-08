@@ -1,0 +1,70 @@
+scenario_id: S04_pedestrian_slowdown
+category: complex_obstacle
+version: v0.1
+description: 行人横穿场景下减速避让
+runtime:
+  random_seed: 42
+  carla_version: 0.9.10.1
+  fixed_delta_seconds: 0.05
+  max_duration_seconds: 120
+map:
+  town: Town05
+  weather: CloudySunset
+ego:
+  vehicle_type: vehicle.tesla.model3
+  spawn_point:
+    x: 0.0
+    y: 0.0
+    z: 0.3
+    yaw: 0.0
+route:
+  route_file: routes/complex_obstacle/dongfeng_complex_obstacle_example.xml
+  route_id: 0
+actors:
+  vehicles: []
+  pedestrians:
+  - id: ped_001
+    type: walker.pedestrian.0001
+    behavior: static_crossing_pedestrian
+    relative_to_ego:
+      longitudinal_distance_m: 35.0
+      lateral_offset_m: 0.0
+  static_props: []
+instructions:
+- id: cmd_001
+  trigger:
+    type: time
+    value: 5.0
+  text_zh: 看到前方行人，减速避让
+  text_en: Slow down and yield to the pedestrian ahead.
+  intent:
+    type: avoid_pedestrian
+    action: slow_down
+    priority: normal
+    target_actor: pedestrian
+  expected_subtasks: []
+success_criteria:
+  no_collision: true
+  pedestrian_slowdown:
+    enabled: true
+    detection_distance_m: 30.0
+    slowdown_distance_m: 22.0
+    safe_speed_kmh: 15.0
+    min_safe_distance_m: 6.0
+    required_slowdown_seconds: 1.0
+    max_response_time_seconds: 5.0
+  max_response_latency_ms: 150
+failure_criteria:
+  collision: true
+  pedestrian_collision: true
+  unsafe_close_distance: true
+  route_deviation: true
+  timeout: true
+  blocked: true
+metrics:
+  required:
+  - min_distance_to_pedestrian
+  - speed_drop
+  - slowdown_success
+  - collision_count
+  - response_latency_ms

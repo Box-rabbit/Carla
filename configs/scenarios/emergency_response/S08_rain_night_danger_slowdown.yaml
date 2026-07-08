@@ -1,0 +1,82 @@
+scenario_id: S08_rain_night_danger_slowdown
+category: emergency_response
+version: v0.2-realistic-rain-night
+description: 雨夜低能见度危险环境下的安全车速控制
+
+runtime:
+  random_seed: 42
+  carla_version: 0.9.10.1
+  fixed_delta_seconds: 0.05
+  max_duration_seconds: 120
+
+map:
+  town: Town03
+  weather: CustomHardRainNight
+  weather_parameters:
+    cloudiness: 100.0
+    precipitation: 80.0
+    precipitation_deposits: 90.0
+    wetness: 100.0
+    wind_intensity: 60.0
+    fog_density: 25.0
+    fog_distance: 40.0
+    sun_altitude_angle: -20.0
+
+ego:
+  vehicle_type: vehicle.tesla.model3
+  spawn_point:
+    x: 0.0
+    y: 0.0
+    z: 0.3
+    yaw: 0.0
+
+route:
+  route_file: routes/emergency_response/dongfeng_emergency_response_example.xml
+  route_id: 0
+
+actors:
+  vehicles: []
+  pedestrians: []
+  static_props: []
+
+instructions:
+  - id: cmd_001
+    trigger:
+      type: time
+      value: 5.0
+    text_zh: 雨夜路况危险，保持安全车速
+    text_en: The road condition is dangerous in rainy night. Keep a safe speed.
+    intent:
+      type: safe_speed_control
+      hazard_type: rain_night_low_visibility
+      priority: emergency
+    expected_subtasks: []
+
+success_criteria:
+  no_collision: true
+  rain_night_slowdown:
+    enabled: true
+    hazard_score_threshold: 0.60
+    safe_speed_kmh: 18.0
+    min_operating_speed_kmh: 8.0
+    required_safe_speed_hold_seconds: 2.0
+    min_travel_distance_m: 20.0
+    max_response_time_seconds: 3.0
+  max_response_latency_ms: 150
+
+failure_criteria:
+  collision: true
+  route_deviation: true
+  lane_invasion: false
+  timeout: true
+  blocked: true
+
+metrics:
+  required:
+    - danger_detected
+    - hazard_score
+    - target_speed_limit_success
+    - safe_speed_hold_time
+    - mean_speed
+    - collision_count
+    - lane_invasion_count

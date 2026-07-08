@@ -1,0 +1,41 @@
+[
+  {
+    "event": "danger_detected",
+    "timestamp": 0.0,
+    "hazard_score": 0.78,
+    "hazard_score_threshold": 0.6,
+    "weather_precipitation": 0.8,
+    "weather_wetness": 1.0,
+    "weather_fog_density": 0.25,
+    "is_night": true,
+    "sun_altitude_angle": -20.0
+  },
+  {
+    "event": "slowdown_started",
+    "timestamp": 0.0,
+    "target_speed_kmh": 35.0,
+    "safe_speed_kmh": 18.0,
+    "response_time_s": 0.0,
+    "max_response_time_seconds": 3.0
+  },
+  {
+    "event": "safe_speed_reached",
+    "timestamp": 10.65,
+    "ego_speed_kmh": 11.96908843878751,
+    "safe_speed_kmh": 18.0,
+    "min_operating_speed_kmh": 8.0,
+    "safe_speed_hold_time": 2.000000000000001,
+    "required_safe_speed_hold_seconds": 2.0,
+    "travelled_distance_m": 26.662706102876655,
+    "min_travel_distance_m": 20.0,
+    "mean_speed_kmh": 9.047147130035631,
+    "max_speed_kmh": 12.222007504818968,
+    "min_speed_kmh": 0.0,
+    "mean_hazard_score": 0.780000000000001
+  },
+  {
+    "event": "task_success",
+    "timestamp": 10.65,
+    "success": true
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "scenario_id": "S01_keep_lane_speed_60",
+  "category": "basic_control",
+  "success": true,
+  "task_completion_rate": 1.0,
+  "collision_count": 0,
+  "lane_invasion_count": 0,
+  "red_light_violation_count": 0,
+  "route_deviation_count": 0,
+  "target_speed_error_kmh": 11.140590252766653,
+  "mean_end_to_end_latency_ms": 1.0,
+  "failure_reason": null
+}

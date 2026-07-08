@@ -1,0 +1,107 @@
+scenario_id: S05_cone_detour
+category: complex_obstacle
+version: v0.4
+description: 基于前方锥桶检测触发的施工锥桶绕行并回归原车道
+runtime:
+  random_seed: 42
+  carla_version: 0.9.10.1
+  fixed_delta_seconds: 0.05
+  max_duration_seconds: 120
+map:
+  town: Town03
+  weather: CloudySunset
+ego:
+  vehicle_type: vehicle.tesla.model3
+  spawn_point:
+    x: 0.0
+    y: 0.0
+    z: 0.3
+    yaw: 0.0
+route:
+  route_file: routes/complex_obstacle/dongfeng_complex_obstacle_example.xml
+  route_id: 0
+actors:
+  vehicles: []
+  pedestrians: []
+  static_props:
+  - id: cone_001
+    type: static.prop.trafficcone01
+    behavior: ego_path_cone_obstacle
+    relative_to_ego:
+      longitudinal_distance_m: 28.0
+      lateral_offset_m: 0.0
+  - id: cone_002
+    type: static.prop.trafficcone01
+    behavior: ego_path_cone_obstacle
+    relative_to_ego:
+      longitudinal_distance_m: 34.0
+      lateral_offset_m: 0.0
+  - id: cone_003
+    type: static.prop.trafficcone01
+    behavior: ego_path_cone_obstacle
+    relative_to_ego:
+      longitudinal_distance_m: 40.0
+      lateral_offset_m: 0.0
+  - id: cone_004
+    type: static.prop.trafficcone01
+    behavior: ego_path_cone_obstacle
+    relative_to_ego:
+      longitudinal_distance_m: 46.0
+      lateral_offset_m: 0.0
+  - id: cone_005
+    type: static.prop.trafficcone01
+    behavior: ego_path_cone_obstacle
+    relative_to_ego:
+      longitudinal_distance_m: 52.0
+      lateral_offset_m: 0.0
+  - id: cone_006
+    type: static.prop.trafficcone01
+    behavior: ego_path_cone_obstacle
+    relative_to_ego:
+      longitudinal_distance_m: 58.0
+      lateral_offset_m: 0.0
+instructions:
+- id: cmd_001
+  trigger:
+    type: time
+    value: 5.0
+  text_zh: 前方施工锥桶导流，减速向左绕行后回到原车道
+  text_en: Slow down, detour left around the construction cone taper, and return to
+    the original lane.
+  intent:
+    type: detour_and_return
+    obstacle_type: cone
+    detour_direction: left
+    return_to_original_lane: true
+    priority: normal
+  expected_subtasks: []
+success_criteria:
+  no_collision: true
+  cone_detour:
+    enabled: true
+    detection_distance_m: 35.0
+    detour_start_distance_m: 30.0
+    detour_lateral_offset_m: 3.5
+    min_safe_distance_to_cone_m: 1.5
+    return_lane_tolerance_m: 1.2
+    required_return_hold_seconds: 1.0
+    max_completion_time_seconds: 30.0
+    no_cone_ahead_hold_seconds: 1.0
+    detection_corridor_half_width_m: 1.8
+  max_response_latency_ms: 150
+failure_criteria:
+  collision: true
+  cone_collision: true
+  unsafe_close_distance: true
+  route_deviation: true
+  timeout: true
+  blocked: true
+metrics:
+  required:
+  - cone_detected
+  - detour_success
+  - return_to_lane_success
+  - min_distance_to_cone
+  - max_lateral_offset_m
+  - collision_count
+  - subtask_missing_rate
