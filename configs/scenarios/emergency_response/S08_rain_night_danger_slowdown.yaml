@@ -7,7 +7,8 @@ runtime:
   random_seed: 42
   carla_version: 0.9.10.1
   fixed_delta_seconds: 0.05
-  max_duration_seconds: 120
+  max_duration_seconds: 300
+  post_success_hold_seconds: 5.0
 
 map:
   town: Town03
@@ -25,14 +26,20 @@ map:
 ego:
   vehicle_type: vehicle.tesla.model3
   spawn_point:
-    x: 0.0
-    y: 0.0
-    z: 0.3
-    yaw: 0.0
+    x: -36.631
+    y: -194.924
+    z: 0.5
+    yaw: 1.44
 
 route:
-  route_file: routes/emergency_response/dongfeng_emergency_response_example.xml
+  route_file: routes/emergency_response/S08_rain_night_danger_slowdown.xml
   route_id: 0
+controller:
+  normal_speed_kmh: 35.0
+  lookahead_m: 14.0
+evaluation:
+  route_corridor_half_width_m: 4.5
+  red_light_lane_tolerance_m: 5.5
 
 actors:
   vehicles: []

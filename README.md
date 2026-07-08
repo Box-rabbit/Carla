@@ -1,30 +1,191 @@
-# 东风 XH-202602：CARLA 场景构建与指标评测模块任务 0-10 正式产出包
+# Dongfeng CARLA Scenario Evaluation
 
-项目：面向智能驾驶的大模型应用场景研究  
-负责模块：CARLA 场景构建与指标评测模块  
-当前主线：基于 LMDrive 复现和改造，场景与评测体系兼容 LMDrive / CARLA Leaderboard pipeline。
+面向东风 `XH-202602` 赛题的 CARLA 场景构建与指标评测仓库。  
+当前仓库重点负责三类可复现场景与统一评测体系：
 
-## 包含内容
+- `basic_control`
+- `complex_obstacle`
+- `emergency_response`
+
+本仓库当前不是直接复用 `LMDrive` 官方 `leaderboard` evaluator 运行，而是采用独立的 `carla_eval` runner、场景 YAML 配置、运行时指标检测与离线报告生成流程。  
+`LMDrive / LangAuto / CARLA Leaderboard / ScenarioRunner / Bench2Drive` 主要作为场景与评测设计参考来源。
+
+## 当前状态
+
+当前已完成 6 个真实 CARLA 闭环评测场景：
+
+- `S01_keep_lane_speed_60`
+- `S02_lane_change`
+- `S04_pedestrian_slowdown`
+- `S05_cone_detour`
+- `S07_cut_in_brake`
+- `S08_rain_night_danger_slowdown`
+
+这些场景均满足以下基本要求：
+
+- 固定随机种子
+- 固定 route
+- 固定 ego spawn 点
+- 固定 actor spawn / 触发逻辑
+- 有对应的日志与评测报告输出
+
+场景总览见：
+- [docs/scenario_design/completed_scenarios_overview.md](docs/scenario_design/completed_scenarios_overview.md)
+
+benchmark 映射见：
+- [docs/scenario_design/benchmark_mapping.md](docs/scenario_design/benchmark_mapping.md)
+
+## 仓库结构
 
 ```text
-docs/                         任务0-10正式文档
-configs/taxonomy/             场景分类体系
-configs/scenarios/            第一阶段场景YAML样例
-configs/metrics/              指标schema
-carla_eval/                   评测模块代码骨架
-routes/                       route XML样例
-refs/                         参考来源说明
+carla_eval/                  场景运行脚本、运行时检测、离线评测、报告生成
+configs/scenarios/           场景配置唯一真源
+configs/metrics/             指标输出 schema
+configs/taxonomy/            场景分类与核心指标分类
+routes/                      route XML
+logs/                        场景运行日志输出
+reports/                     单场景评测报告与汇总表
+docs/scenario_design/        场景设计与 benchmark 映射
+docs/metrics/                指标、日志、事件、报告设计说明
+docs/pipeline/               LMDrive / benchmark 调研与接入说明
 ```
 
-## 总体方案
+## 运行环境
 
-```text
-配置文件管理场景
-+ 三层指标评测：每帧日志 / 事件检测 / 最终指标统计
-+ LMDrive/LangAuto 主接入方式
-+ CARLA Leaderboard 基础路线与违规指标
-+ ScenarioRunner 触发与 actor 编排思想
-+ Bench2Drive 短路线、单能力、多场景评测思想
+- `CARLA 0.9.10.1`
+- Python 环境需安装 CARLA Python API 与本仓库运行依赖
+- 当前场景脚本默认连接 `localhost:2000`
+
+## 快速运行
+
+### 1. 运行单个场景
+
+```bash
+python carla_eval/run_carla_s01_keep_lane_speed.py
+python carla_eval/run_carla_s02_lane_change.py
+python carla_eval/run_carla_s04_pedestrian_slowdown.py
+python carla_eval/run_carla_s05_cone_detour.py
+python carla_eval/run_carla_s07_cut_in_brake.py
+python carla_eval/run_carla_s08_rain_night_danger_slowdown.py
 ```
 
-第一阶段优先实现短路线、固定 actor、固定触发点、固定随机种子，保证场景可控、可复现、可稳定输出指标。
+默认输出：
+
+- 帧日志：`logs/<category>/<scenario_id>/frames.jsonl`
+
+其中：
+
+- `S07` 默认日志目录为 `logs/emergency_response/S07_cut_in_brake_realistic_urgent/`
+- 其他场景默认日志目录与 `scenario_id` 对应
+
+### 2. 离线生成评测报告
+
+```bash
+python carla_eval/evaluate.py \
+  --scenario_config configs/scenarios/basic_control/S01_keep_lane_speed_60.yaml \
+  --frames logs/basic_control/S01_keep_lane_speed_60/frames.jsonl \
+  --output_dir reports/basic_control/S01_keep_lane_speed_60
+```
+
+默认输出：
+
+- `events.json`
+- `evaluation_report.json`
+- `evaluation_report.csv`
+
+## 当前场景清单
+
+### basic_control
+
+- `S01_keep_lane_speed_60`
+  - 目标：保持车道并提速至 `60 km/h`
+  - 配置：[configs/scenarios/basic_control/S01_keep_lane_speed_60.yaml](configs/scenarios/basic_control/S01_keep_lane_speed_60.yaml)
+  - 路线：[routes/basic_control/S01_keep_lane_speed_60.xml](routes/basic_control/S01_keep_lane_speed_60.xml)
+
+- `S02_lane_change`
+  - 目标：按指令向左变道并保持目标车道
+  - 配置：[configs/scenarios/basic_control/S02_lane_change.yaml](configs/scenarios/basic_control/S02_lane_change.yaml)
+  - 路线：[routes/basic_control/S02_lane_change.xml](routes/basic_control/S02_lane_change.xml)
+
+### complex_obstacle
+
+- `S04_pedestrian_slowdown`
+  - 目标：检测前方行人并减速避让
+  - 配置：[configs/scenarios/complex_obstacle/S04_pedestrian_slowdown.yaml](configs/scenarios/complex_obstacle/S04_pedestrian_slowdown.yaml)
+  - 路线：[routes/complex_obstacle/S04_pedestrian_slowdown.xml](routes/complex_obstacle/S04_pedestrian_slowdown.xml)
+
+- `S05_cone_detour`
+  - 目标：检测锥桶后单车道左绕并回原车道
+  - 配置：[configs/scenarios/complex_obstacle/S05_cone_detour.yaml](configs/scenarios/complex_obstacle/S05_cone_detour.yaml)
+  - 路线：[routes/complex_obstacle/S05_cone_detour.xml](routes/complex_obstacle/S05_cone_detour.xml)
+
+### emergency_response
+
+- `S07_cut_in_brake`
+  - 目标：应对前车切入急刹，基于距离与 `TTC` 触发应急制动
+  - 配置：[configs/scenarios/emergency_response/S07_cut_in_brake.yaml](configs/scenarios/emergency_response/S07_cut_in_brake.yaml)
+  - 路线：[routes/emergency_response/S07_cut_in_brake.xml](routes/emergency_response/S07_cut_in_brake.xml)
+
+- `S08_rain_night_danger_slowdown`
+  - 目标：雨夜低能见度环境下识别危险并保持安全低速
+  - 配置：[configs/scenarios/emergency_response/S08_rain_night_danger_slowdown.yaml](configs/scenarios/emergency_response/S08_rain_night_danger_slowdown.yaml)
+  - 路线：[routes/emergency_response/S08_rain_night_danger_slowdown.xml](routes/emergency_response/S08_rain_night_danger_slowdown.xml)
+
+## 指标与评测流程
+
+当前评测采用三层结构：
+
+1. 每帧日志
+2. 事件检测
+3. 最终报告生成
+
+关键运行时检测模块：
+
+- `RouteTracker`
+- `LaneInvasionTracker`
+- `RedLightViolationTracker`
+
+关键指标包括：
+
+- `task_completion_rate`
+- `collision_count`
+- `lane_invasion_count`
+- `red_light_violation_count`
+- `route_deviation_count`
+- `target_speed_error_kmh`
+- `subtask_missing_rate`
+- `min_ttc`
+- `emergency_response_latency_ms`
+
+相关说明见：
+
+- [docs/metrics/task6_scenario_config_schema.md](docs/metrics/task6_scenario_config_schema.md)
+- [docs/metrics/task7_metric_design.md](docs/metrics/task7_metric_design.md)
+- [docs/metrics/task8_frame_logger_design.md](docs/metrics/task8_frame_logger_design.md)
+- [docs/metrics/task9_event_detector_design.md](docs/metrics/task9_event_detector_design.md)
+- [docs/metrics/task10_report_generator_design.md](docs/metrics/task10_report_generator_design.md)
+
+## 当前实现与 LMDrive 的关系
+
+当前主线是：
+
+- 先把东风三类场景变成可复现 CARLA 闭环测试场景
+- 建立独立、可控、可解释的指标统计体系
+- 后续再把 `LMDrive` 作为语言引导驾驶主模型接入当前评测底座
+
+也就是说：
+
+- 当前仓库已经有自己的场景运行与评测链路
+- `LMDrive` 是上层模型接入方向，不是当前 runner 的直接依赖
+
+相关说明见：
+
+- [docs/pipeline/task0_lmdrive_pipeline_check.md](docs/pipeline/task0_lmdrive_pipeline_check.md)
+- [docs/pipeline/task1_benchmark_survey.md](docs/pipeline/task1_benchmark_survey.md)
+- [docs/pipeline/task2_benchmark_to_dongfeng_mapping.md](docs/pipeline/task2_benchmark_to_dongfeng_mapping.md)
+
+## 说明
+
+- `configs/scenarios/*.yaml` 是当前场景定义的唯一真源
+- 早期 `docs/*/task*.md` 中部分文件属于设计稿或阶段性说明，阅读时应优先以当前 config、runner 和 report 为准
+- 当前 README 仅描述仓库已落地的场景与评测能力，不代表语音链路、LMDrive 主模型接入、车规级轻量化部署已经全部完成

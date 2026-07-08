@@ -7,9 +7,27 @@ import carla
 import yaml
 
 try:
-    from carla_eval.runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+    from carla_eval.runtime_metrics import (
+        LaneInvasionTracker,
+        RedLightViolationTracker,
+        RouteTracker,
+        apply_weather_from_config,
+        get_controller_param,
+        get_instruction_trigger_time,
+        load_world_for_config,
+        make_transform_from_config,
+    )
 except ModuleNotFoundError:
-    from runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+    from runtime_metrics import (
+        LaneInvasionTracker,
+        RedLightViolationTracker,
+        RouteTracker,
+        apply_weather_from_config,
+        get_controller_param,
+        get_instruction_trigger_time,
+        load_world_for_config,
+        make_transform_from_config,
+    )
 
 
 def clip(x, low, high):
@@ -19,6 +37,21 @@ def clip(x, low, high):
 def get_speed_kmh(vehicle):
     v = vehicle.get_velocity()
     return 3.6 * (v.x ** 2 + v.y ** 2 + v.z ** 2) ** 0.5
+
+
+def get_waypoint(carla_map, location):
+    return carla_map.get_waypoint(
+        location,
+        project_to_road=True,
+        lane_type=carla.LaneType.Driving,
+    )
+
+
+def get_next_target_location(wp, lookahead):
+    next_wps = wp.next(lookahead)
+    if not next_wps:
+        return wp.transform.location
+    return next_wps[0].transform.location
 
 
 def dot2d(vec, direction):
@@ -95,11 +128,11 @@ def compute_hazard_score(weather):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--spawn-index", type=int, default=49)
-    parser.add_argument("--duration", type=float, default=45.0)
-    parser.add_argument("--normal-speed", type=float, default=35.0)
-    parser.add_argument("--lookahead", type=float, default=14.0)
-    parser.add_argument("--log-id", type=str, default="S08_rain_night_danger_slowdown")
+    parser.add_argument("--spawn-index", type=int, default=None)
+    parser.add_argument("--duration", type=float, default=None)
+    parser.add_argument("--normal-speed", type=float, default=None)
+    parser.add_argument("--lookahead", type=float, default=None)
+    parser.add_argument("--log-id", type=str, default=None)
     parser.add_argument(
         "--config",
         type=str,
@@ -110,6 +143,20 @@ def main():
     config_path = Path(args.config)
     with config_path.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    cfg["__config_path__"] = str(config_path.resolve())
+
+    scenario_id = cfg.get("scenario_id", config_path.stem)
+    category = cfg.get("category", "emergency_response")
+    runtime_cfg = cfg.get("runtime", {})
+    eval_cfg = cfg.get("evaluation", {})
+    primary_instruction_id = cfg.get("instructions", [{}])[0].get("id", "cmd_001")
+    trigger_time = get_instruction_trigger_time(cfg, default=5.0)
+    normal_speed = float(args.normal_speed if args.normal_speed is not None else get_controller_param(cfg, "normal_speed_kmh", 35.0))
+    lookahead = float(args.lookahead if args.lookahead is not None else get_controller_param(cfg, "lookahead_m", 14.0))
+    duration = float(args.duration if args.duration is not None else runtime_cfg.get("max_duration_seconds", 45.0))
+    post_success_hold_seconds = float(runtime_cfg.get("post_success_hold_seconds", 5.0))
+    route_corridor_half_width = float(eval_cfg.get("route_corridor_half_width_m", 4.5))
+    red_light_lane_tolerance = float(eval_cfg.get("red_light_lane_tolerance_m", 5.5))
 
     slow_cfg = cfg.get("success_criteria", {}).get("rain_night_slowdown", {})
     hazard_threshold = float(slow_cfg.get("hazard_score_threshold", 0.60))
@@ -118,14 +165,15 @@ def main():
     required_hold = float(slow_cfg.get("required_safe_speed_hold_seconds", 2.0))
     min_travel_distance = float(slow_cfg.get("min_travel_distance_m", 20.0))
 
-    out_dir = Path("logs/emergency_response") / args.log_id
+    log_scenario_id = args.log_id or scenario_id
+    out_dir = Path("logs") / category / log_scenario_id
     out_dir.mkdir(parents=True, exist_ok=True)
     log_path = out_dir / "frames.jsonl"
 
     client = carla.Client("localhost", 2000)
     client.set_timeout(10.0)
 
-    world = client.get_world()
+    world = load_world_for_config(client, cfg)
     carla_map = world.get_map()
     bp_lib = world.get_blueprint_library()
 
@@ -134,8 +182,9 @@ def main():
 
     settings = world.get_settings()
     settings.synchronous_mode = True
-    settings.fixed_delta_seconds = 0.05
+    settings.fixed_delta_seconds = float(runtime_cfg.get("fixed_delta_seconds", 0.05))
     world.apply_settings(settings)
+    dt = float(settings.fixed_delta_seconds)
 
     ego = None
     collision_sensor = None
@@ -154,12 +203,18 @@ def main():
 
         world.tick()
 
-        weather_cfg = cfg.get("map", {}).get("weather_parameters", {})
-        applied_weather = apply_custom_weather(world, weather_cfg)
+        apply_weather_from_config(world, cfg)
 
-        spawn_points = carla_map.get_spawn_points()
-        spawn = spawn_points[args.spawn_index % len(spawn_points)]
-        spawn.location.z += 0.5
+        spawn = make_transform_from_config(cfg)
+        spawn_source = "config"
+        spawn_index = None
+
+        if args.spawn_index is not None:
+            spawn_points = carla_map.get_spawn_points()
+            spawn_index = args.spawn_index % len(spawn_points)
+            spawn = spawn_points[spawn_index]
+            spawn.location.z += 0.5
+            spawn_source = f"spawn_index={spawn_index}"
 
         ego_bp = bp_lib.find(cfg.get("ego", {}).get("vehicle_type", "vehicle.tesla.model3"))
         ego = world.try_spawn_actor(ego_bp, spawn)
@@ -179,22 +234,17 @@ def main():
         collision_sensor.listen(on_collision)
         lane_invasion_tracker = LaneInvasionTracker(world, bp_lib, ego)
 
-        ref_loc = carla.Location(x=spawn.location.x, y=spawn.location.y, z=spawn.location.z)
-        ref_forward = spawn.get_forward_vector()
-        ref_right = spawn.get_right_vector()
-        route_tracker = RouteTracker(
-            carla_map=carla_map,
-            ref_loc=ref_loc,
-            ref_forward=ref_forward,
-            ref_right=ref_right,
-            route_length_m=100.0,
-            corridor_half_width_m=4.5,
+        route_tracker = RouteTracker.from_route_config(
+            carla_map,
+            cfg,
+            corridor_half_width_m=route_corridor_half_width,
         )
         red_light_tracker = RedLightViolationTracker(
             world,
-            ref_loc,
-            ref_forward,
-            ref_right,
+            route_tracker.ref_loc,
+            route_tracker.ref_forward,
+            route_tracker.ref_right,
+            lane_tolerance_m=red_light_lane_tolerance,
         )
 
         state = "NORMAL_DRIVE"
@@ -207,33 +257,37 @@ def main():
         danger_detected_time = None
         slowdown_started_time = None
         safe_speed_reached_time = None
+        success_time = None
 
         safe_speed_hold_time = 0.0
-        max_frames = int(args.duration / 0.05)
+        max_frames = int(duration / dt)
+        cumulative_travel_distance = 0.0
+        prev_ego_loc = ego.get_location()
 
         print(f"[INFO] map = {carla_map.name}")
-        print(f"[INFO] spawn_index = {args.spawn_index}")
+        print(f"[INFO] spawn source = {spawn_source}")
         print(f"[INFO] weather = {cfg.get('map', {}).get('weather')}")
         print("[INFO] S08 trigger mode = weather-risk / hazard-score based")
+        print(f"[INFO] config = {config_path}")
+        print(f"[INFO] trigger_time = {trigger_time} s")
+        print(f"[INFO] normal_speed = {normal_speed} km/h")
+        print(f"[INFO] lookahead = {lookahead} m")
         print(f"[INFO] safe_speed = {safe_speed_kmh} km/h")
         print(f"[INFO] hazard_threshold = {hazard_threshold}")
         print(f"[INFO] log_path = {log_path}")
 
         with log_path.open("w", encoding="utf-8") as f:
             for frame in range(max_frames):
-                timestamp = frame * 0.05
+                timestamp = frame * dt
 
                 weather = world.get_weather()
                 hazard = compute_hazard_score(weather)
                 hazard_score = hazard["hazard_score"]
 
                 ego_loc = ego.get_location()
-                ego_rel = carla.Location(
-                    x=ego_loc.x - ref_loc.x,
-                    y=ego_loc.y - ref_loc.y,
-                    z=0.0,
-                )
-                travelled_distance = dot2d(ego_rel, ref_forward)
+                current_wp = get_waypoint(carla_map, ego_loc)
+                route_metrics_before = route_tracker.measure(ego_loc)
+                travelled_distance = cumulative_travel_distance
 
                 if hazard_score >= hazard_threshold and not danger_detected:
                     danger_detected = True
@@ -244,10 +298,11 @@ def main():
                     )
 
                 if state == "NORMAL_DRIVE":
-                    target_speed = args.normal_speed
+                    target_speed = normal_speed
 
                     if danger_detected:
                         state = "SLOWDOWN"
+                        target_speed = safe_speed_kmh
                         slowdown_started = True
                         slowdown_started_time = timestamp
                         print(
@@ -262,7 +317,7 @@ def main():
                     target_speed = safe_speed_kmh
 
                 else:
-                    target_speed = 0.0
+                    target_speed = safe_speed_kmh
 
                 ego_speed_kmh = get_speed_kmh(ego)
 
@@ -272,28 +327,29 @@ def main():
                     and travelled_distance >= min_travel_distance
                     and not collision_info["value"]
                 ):
-                    safe_speed_hold_time += 0.05
+                    safe_speed_hold_time += dt
                 else:
                     safe_speed_hold_time = 0.0
 
                 if safe_speed_hold_time >= required_hold and not task_completed:
-                    state = "COMPLETE"
+                    state = "SAFE_LOW_SPEED"
                     safe_speed_reached = True
                     task_completed = True
                     safe_speed_reached_time = timestamp
+                    success_time = timestamp
                     print(
                         f"[SUCCESS] safe low speed completed at t={timestamp:.1f}s, "
                         f"speed={ego_speed_kmh:.1f}km/h, "
                         f"travelled={travelled_distance:.1f}m, "
-                        f"hold={safe_speed_hold_time:.1f}s"
+                        f"hold={safe_speed_hold_time:.1f}s, "
+                        f"continuing for {post_success_hold_seconds:.1f}s."
                     )
 
-                target_progress = travelled_distance + args.lookahead
-                target_loc = carla.Location(
-                    x=ref_loc.x + target_progress * ref_forward.x,
-                    y=ref_loc.y + target_progress * ref_forward.y,
-                    z=ref_loc.z,
-                )
+                if route_metrics_before["route_completion"] >= 0.98 and current_wp is not None:
+                    target_loc = get_next_target_location(current_wp, lookahead)
+                else:
+                    target_progress = route_metrics_before["max_route_progress_m"] + lookahead
+                    target_loc = route_tracker.point_at_progress(target_progress)
 
                 steer = compute_steer_to_location(ego, target_loc)
                 throttle, brake = compute_speed_control(ego_speed_kmh, target_speed)
@@ -309,6 +365,8 @@ def main():
                 world.tick()
 
                 ego_after = ego.get_location()
+                cumulative_travel_distance += ego_after.distance(prev_ego_loc)
+                prev_ego_loc = ego_after
                 ego_speed_after = get_speed_kmh(ego)
                 lane_invasion_metrics = lane_invasion_tracker.snapshot()
                 route_metrics = route_tracker.measure(ego_after)
@@ -331,18 +389,18 @@ def main():
                 record = {
                     "timestamp": timestamp,
                     "frame": frame,
-                    "scenario_id": args.log_id,
+                    "scenario_id": log_scenario_id,
                     "state": state,
-                    "instruction_id": "cmd_001" if timestamp >= 5.0 else None,
+                    "instruction_id": primary_instruction_id if timestamp >= trigger_time else None,
 
                     "ego_x": ego_after.x,
                     "ego_y": ego_after.y,
                     "ego_z": ego_after.z,
                     "ego_speed_kmh": ego_speed_after,
-                    "travelled_distance_m": travelled_distance,
+                    "travelled_distance_m": cumulative_travel_distance,
 
                     "target_speed_kmh": target_speed,
-                    "normal_speed_kmh": args.normal_speed,
+                    "normal_speed_kmh": normal_speed,
                     "safe_speed_kmh": safe_speed_kmh,
                     "min_operating_speed_kmh": min_operating_speed_kmh,
 
@@ -398,12 +456,12 @@ def main():
                         f"speed={ego_speed_after:.1f} "
                         f"target={target_speed:.1f} "
                         f"hazard={hazard_score:.2f} "
-                        f"travel={travelled_distance:.1f} "
+                        f"travel={cumulative_travel_distance:.1f} "
                         f"hold={safe_speed_hold_time:.1f}s "
                         f"collision={collision_info['value']}"
                     )
 
-                if task_completed:
+                if success_time is not None and timestamp >= success_time + post_success_hold_seconds:
                     break
 
                 if collision_info["value"] and timestamp > 2.0:

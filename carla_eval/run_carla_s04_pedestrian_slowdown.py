@@ -7,9 +7,27 @@ import carla
 import yaml
 
 try:
-    from carla_eval.runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+    from carla_eval.runtime_metrics import (
+        LaneInvasionTracker,
+        RedLightViolationTracker,
+        RouteTracker,
+        apply_weather_from_config,
+        get_controller_param,
+        get_instruction_trigger_time,
+        load_world_for_config,
+        make_transform_from_config,
+    )
 except ModuleNotFoundError:
-    from runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+    from runtime_metrics import (
+        LaneInvasionTracker,
+        RedLightViolationTracker,
+        RouteTracker,
+        apply_weather_from_config,
+        get_controller_param,
+        get_instruction_trigger_time,
+        load_world_for_config,
+        make_transform_from_config,
+    )
 
 
 def clip(x, low, high):
@@ -27,13 +45,6 @@ def get_waypoint(carla_map, location):
         project_to_road=True,
         lane_type=carla.LaneType.Driving,
     )
-
-
-def get_next_location(wp, lookahead):
-    next_wps = wp.next(lookahead)
-    if not next_wps:
-        return wp.transform.location
-    return next_wps[0].transform.location
 
 
 def compute_steer_to_location(vehicle, target_loc):
@@ -86,40 +97,33 @@ def compute_control(speed_kmh, target_speed_kmh, distance_to_pedestrian, slowdow
     return throttle, brake
 
 
-def make_pedestrian_transform_from_ego(carla_map, ego_spawn, longitudinal_distance_m, lateral_offset_m):
+def make_pedestrian_transform_from_route(route_tracker, longitudinal_distance_m, lateral_offset_m):
     """
-    在 ego 前方 longitudinal_distance_m 附近的道路中心线上放置行人。
-    lateral_offset_m 暂时保留字段，第一版默认放在车道中心附近。
+    按配置 route 放置行人，避免 waypoint 分支带来的隐式位置变化。
     """
-    initial_wp = get_waypoint(carla_map, ego_spawn.location)
-    next_wps = initial_wp.next(float(longitudinal_distance_m))
-
-    if next_wps:
-        ped_wp = next_wps[0]
-        loc = ped_wp.transform.location
-        rot = ped_wp.transform.rotation
-    else:
-        forward = ego_spawn.get_forward_vector()
-        right = ego_spawn.get_right_vector()
-        loc = carla.Location(
-            x=ego_spawn.location.x + longitudinal_distance_m * forward.x + lateral_offset_m * right.x,
-            y=ego_spawn.location.y + longitudinal_distance_m * forward.y + lateral_offset_m * right.y,
-            z=ego_spawn.location.z,
-        )
-        rot = ego_spawn.rotation
-
-    # 行人稍微抬高，避免卡进地面
+    loc = route_tracker.point_at_progress(
+        longitudinal_distance_m,
+        lateral_offset_m=lateral_offset_m,
+    )
+    next_loc = route_tracker.point_at_progress(
+        longitudinal_distance_m + 1.0,
+        lateral_offset_m=lateral_offset_m,
+    )
+    yaw = math.degrees(math.atan2(next_loc.y - loc.y, next_loc.x - loc.x))
     loc.z += 0.8
-    return carla.Transform(loc, carla.Rotation(pitch=0.0, yaw=rot.yaw + 90.0, roll=0.0))
+    return carla.Transform(
+        loc,
+        carla.Rotation(pitch=0.0, yaw=yaw + 90.0, roll=0.0),
+    )
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--spawn-index", type=int, default=49)
-    parser.add_argument("--duration", type=float, default=40.0)
-    parser.add_argument("--target-speed", type=float, default=35.0)
-    parser.add_argument("--lookahead", type=float, default=12.0)
-    parser.add_argument("--log-id", type=str, default="S04_pedestrian_slowdown")
+    parser.add_argument("--spawn-index", type=int, default=None)
+    parser.add_argument("--duration", type=float, default=None)
+    parser.add_argument("--target-speed", type=float, default=None)
+    parser.add_argument("--lookahead", type=float, default=None)
+    parser.add_argument("--log-id", type=str, default=None)
     parser.add_argument(
         "--config",
         type=str,
@@ -131,6 +135,20 @@ def main():
 
     with config_path.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    cfg["__config_path__"] = str(config_path.resolve())
+
+    scenario_id = cfg.get("scenario_id", config_path.stem)
+    category = cfg.get("category", "complex_obstacle")
+    runtime_cfg = cfg.get("runtime", {})
+    eval_cfg = cfg.get("evaluation", {})
+    primary_instruction_id = cfg.get("instructions", [{}])[0].get("id", "cmd_001")
+    trigger_time = get_instruction_trigger_time(cfg, default=5.0)
+    target_speed = float(args.target_speed if args.target_speed is not None else get_controller_param(cfg, "target_speed_kmh", 35.0))
+    lookahead = float(args.lookahead if args.lookahead is not None else get_controller_param(cfg, "lookahead_m", 12.0))
+    duration = float(args.duration if args.duration is not None else runtime_cfg.get("max_duration_seconds", 40.0))
+    post_success_hold_seconds = float(runtime_cfg.get("post_success_hold_seconds", 5.0))
+    route_corridor_half_width = float(eval_cfg.get("route_corridor_half_width_m", 3.5))
+    red_light_lane_tolerance = float(eval_cfg.get("red_light_lane_tolerance_m", 5.5))
 
     slowdown_cfg = cfg.get("success_criteria", {}).get("pedestrian_slowdown", {})
     detection_distance = float(slowdown_cfg.get("detection_distance_m", 30.0))
@@ -145,22 +163,25 @@ def main():
     ped_longitudinal_distance = float(rel.get("longitudinal_distance_m", 35.0))
     ped_lateral_offset = float(rel.get("lateral_offset_m", 0.0))
 
-    out_dir = Path("logs/complex_obstacle") / args.log_id
+    log_scenario_id = args.log_id or scenario_id
+    out_dir = Path("logs") / category / log_scenario_id
     out_dir.mkdir(parents=True, exist_ok=True)
     log_path = out_dir / "frames.jsonl"
 
     client = carla.Client("localhost", 2000)
     client.set_timeout(10.0)
 
-    world = client.get_world()
+    world = load_world_for_config(client, cfg)
+    apply_weather_from_config(world, cfg)
     carla_map = world.get_map()
     blueprint_library = world.get_blueprint_library()
 
     original_settings = world.get_settings()
     settings = world.get_settings()
     settings.synchronous_mode = True
-    settings.fixed_delta_seconds = 0.05
+    settings.fixed_delta_seconds = float(runtime_cfg.get("fixed_delta_seconds", 0.05))
     world.apply_settings(settings)
+    dt = float(settings.fixed_delta_seconds)
 
     ego = None
     pedestrian = None
@@ -186,13 +207,19 @@ def main():
         vehicle_type = cfg.get("ego", {}).get("vehicle_type", "vehicle.tesla.model3")
         vehicle_bp = blueprint_library.find(vehicle_type)
 
-        spawn_points = carla_map.get_spawn_points()
-        spawn_index = args.spawn_index % len(spawn_points)
-        spawn_point = spawn_points[spawn_index]
-        spawn_point.location.z += 0.5
+        spawn_point = make_transform_from_config(cfg)
+        spawn_source = "config"
+        spawn_index = None
 
-        print(f"[INFO] total spawn points = {len(spawn_points)}")
-        print(f"[INFO] using spawn_index = {spawn_index}")
+        if args.spawn_index is not None:
+            spawn_points = carla_map.get_spawn_points()
+            spawn_index = args.spawn_index % len(spawn_points)
+            spawn_point = spawn_points[spawn_index]
+            spawn_point.location.z += 0.5
+            spawn_source = f"spawn_index={spawn_index}"
+
+        print(f"[INFO] map = {carla_map.name}")
+        print(f"[INFO] spawn source = {spawn_source}")
         print(
             f"[INFO] ego spawn = "
             f"({spawn_point.location.x:.2f}, {spawn_point.location.y:.2f}, {spawn_point.location.z:.2f})"
@@ -205,10 +232,15 @@ def main():
         for _ in range(20):
             world.tick()
 
-        # 放置行人
-        ped_transform = make_pedestrian_transform_from_ego(
+        route_tracker = RouteTracker.from_route_config(
             carla_map,
-            spawn_point,
+            cfg,
+            corridor_half_width_m=route_corridor_half_width,
+        )
+
+        # 按 route 唯一真源放置行人，保留相对纵向距离和横向偏移。
+        ped_transform = make_pedestrian_transform_from_route(
+            route_tracker,
             ped_longitudinal_distance,
             ped_lateral_offset,
         )
@@ -247,38 +279,37 @@ def main():
 
         collision_sensor.listen(on_collision)
         lane_invasion_tracker = LaneInvasionTracker(world, blueprint_library, ego)
-        route_tracker = RouteTracker.from_spawn_transform(
-            carla_map,
-            spawn_point,
-            corridor_half_width_m=3.5,
-        )
         red_light_tracker = RedLightViolationTracker(
             world,
             route_tracker.ref_loc,
             route_tracker.ref_forward,
             route_tracker.ref_right,
+            lane_tolerance_m=red_light_lane_tolerance,
         )
 
-        max_frames = int(args.duration / 0.05)
+        max_frames = int(duration / dt)
 
         slowdown_hold_time = 0.0
         safe_slowdown_completed = False
         safe_slowdown_completed_time = None
         first_detection_time = None
         slowdown_started_time = None
+        success_time = None
 
-        print(f"[START] Running {args.log_id}")
+        print(f"[START] Running {log_scenario_id}")
         print(f"[INFO] config = {config_path}")
-        print(f"[INFO] target_speed = {args.target_speed} km/h")
+        print(f"[INFO] trigger_time = {trigger_time} s")
+        print(f"[INFO] target_speed = {target_speed} km/h")
         print(f"[INFO] detection_distance = {detection_distance} m")
         print(f"[INFO] slowdown_distance = {slowdown_distance} m")
         print(f"[INFO] safe_speed = {safe_speed_kmh} km/h")
         print(f"[INFO] min_safe_distance = {min_safe_distance} m")
+        print(f"[INFO] lookahead = {lookahead} m")
         print(f"[INFO] log_path = {log_path}")
 
         with log_path.open("w", encoding="utf-8") as f:
             for frame in range(max_frames):
-                timestamp = frame * 0.05
+                timestamp = frame * dt
 
                 ego_loc = ego.get_location()
                 ped_loc = pedestrian.get_location()
@@ -296,15 +327,17 @@ def main():
                     slowdown_started_time = timestamp
                     print(f"[EVENT] slowdown_started at t={timestamp:.1f}s, distance={distance_to_pedestrian:.1f}m")
 
-                current_wp = get_waypoint(carla_map, ego_loc)
-                target_loc = get_next_location(current_wp, args.lookahead)
+                route_metrics_before = route_tracker.measure(ego_loc)
+                target_loc = route_tracker.point_at_progress(
+                    route_metrics_before["route_progress_m"] + lookahead
+                )
 
                 speed_kmh = get_speed_kmh(ego)
                 steer = compute_steer_to_location(ego, target_loc)
 
                 throttle, brake = compute_control(
                     speed_kmh,
-                    args.target_speed,
+                    target_speed,
                     distance_to_pedestrian,
                     slowdown_distance,
                 )
@@ -334,16 +367,18 @@ def main():
                 distance_safe = distance_to_pedestrian >= min_safe_distance
 
                 if slowdown_started and speed_safe and distance_safe and not collision_info["value"]:
-                    slowdown_hold_time += 0.05
+                    slowdown_hold_time += dt
                 else:
                     slowdown_hold_time = 0.0
 
                 if slowdown_hold_time >= required_slowdown_seconds and not safe_slowdown_completed:
                     safe_slowdown_completed = True
                     safe_slowdown_completed_time = timestamp
+                    success_time = timestamp
                     print(
                         f"[SUCCESS] safe slowdown completed at t={timestamp:.1f}s, "
-                        f"speed={speed_kmh:.1f}km/h, distance={distance_to_pedestrian:.1f}m"
+                        f"speed={speed_kmh:.1f}km/h, distance={distance_to_pedestrian:.1f}m, "
+                        f"continuing for {post_success_hold_seconds:.1f}s."
                     )
 
                 # spectator 跟随 ego
@@ -365,8 +400,8 @@ def main():
                 record = {
                     "timestamp": timestamp,
                     "frame": frame,
-                    "scenario_id": args.log_id,
-                    "instruction_id": "cmd_001" if timestamp >= 5.0 else None,
+                    "scenario_id": log_scenario_id,
+                    "instruction_id": primary_instruction_id if timestamp >= trigger_time else None,
                     "ego_x": ego_loc.x,
                     "ego_y": ego_loc.y,
                     "ego_z": ego_loc.z,
@@ -421,7 +456,7 @@ def main():
                         f"other={collision_info['other_actor']}"
                     )
 
-                if safe_slowdown_completed:
+                if success_time is not None and timestamp >= success_time + post_success_hold_seconds:
                     break
 
                 if collision_info["value"] and timestamp > 2.0:

@@ -21,6 +21,36 @@ def load_frames(path):
     return frames
 
 
+def get_frame_dt(cfg, frames, default=0.05):
+    runtime_dt = cfg.get("runtime", {}).get("fixed_delta_seconds")
+    if runtime_dt is not None:
+        try:
+            runtime_dt = float(runtime_dt)
+            if runtime_dt > 0.0:
+                return runtime_dt
+        except (TypeError, ValueError):
+            pass
+
+    last_t = None
+    for record in frames:
+        timestamp = record.get("timestamp")
+        if timestamp is None:
+            continue
+        timestamp = float(timestamp)
+        if last_t is not None and timestamp > last_t:
+            return timestamp - last_t
+        last_t = timestamp
+
+    return default
+
+
+def failure_enabled(cfg, key, default=True):
+    failure_cfg = cfg.get("failure_criteria", {})
+    if key not in failure_cfg:
+        return default
+    return bool(failure_cfg.get(key))
+
+
 def first_true_frame(frames, key):
     for record in frames:
         if record.get(key):
@@ -60,12 +90,13 @@ def detect_speed_target(frames, cfg):
 
     hold_time = 0.0
     last_t = None
+    default_dt = get_frame_dt(cfg, frames)
 
     for record in frames:
         timestamp = float(record.get("timestamp", 0.0))
         speed = float(record.get("ego_speed_kmh", 0.0))
 
-        dt = 0.05 if last_t is None else max(0.0, timestamp - last_t)
+        dt = default_dt if last_t is None else max(0.0, timestamp - last_t)
         last_t = timestamp
 
         if low <= speed <= high:
@@ -166,6 +197,7 @@ def detect_pedestrian_slowdown(frames, cfg):
     safe_speed = float(ped_cfg.get("safe_speed_kmh", 15.0))
     min_safe_distance = float(ped_cfg.get("min_safe_distance_m", 6.0))
     required_hold = float(ped_cfg.get("required_slowdown_seconds", 1.0))
+    max_response_time = float(ped_cfg.get("max_response_time_seconds", 5.0))
 
     detected_frame = first_true_frame(frames, "pedestrian_detected")
     slowdown_frame = first_true_frame(frames, "slowdown_started")
@@ -217,7 +249,14 @@ def detect_pedestrian_slowdown(frames, cfg):
             "min_speed": min(speeds) if speeds else None,
         })
 
-        if not has_collision(frames):
+        response_ok = True
+        if slowdown_frame is not None and detected_frame is not None:
+            response_ok = (
+                float(slowdown_frame.get("timestamp", 0.0))
+                - float(detected_frame.get("timestamp", 0.0))
+            ) <= max_response_time
+
+        if not has_collision(frames) and response_ok:
             events.append({
                 "event": "task_success",
                 "timestamp": completed_frame.get("timestamp", 0.0),
@@ -394,7 +433,14 @@ def detect_cut_in_brake(frames, cfg):
             "max_brake": max_brake,
         })
 
-        if not has_collision(frames):
+        response_ok = True
+        if brake_frame is not None and detected_frame is not None:
+            response_ok = (
+                float(brake_frame.get("timestamp", 0.0))
+                - float(detected_frame.get("timestamp", 0.0))
+            ) <= max_response_time
+
+        if not has_collision(frames) and response_ok:
             events.append({
                 "event": "task_success",
                 "timestamp": completed_frame.get("timestamp", 0.0),
@@ -472,7 +518,14 @@ def detect_rain_night_slowdown(frames, cfg):
             "mean_hazard_score": sum(hazards) / len(hazards) if hazards else None,
         })
 
-        if not has_collision(frames):
+        response_ok = True
+        if slowdown_frame is not None and danger_frame is not None:
+            response_ok = (
+                float(slowdown_frame.get("timestamp", 0.0))
+                - float(danger_frame.get("timestamp", 0.0))
+            ) <= max_response_time
+
+        if not has_collision(frames) and response_ok:
             events.append({
                 "event": "task_success",
                 "timestamp": safe_frame.get("timestamp", 0.0),
@@ -482,12 +535,9 @@ def detect_rain_night_slowdown(frames, cfg):
     return events
 
 
-def detect_task_failure(frames, events):
-    if any(event["event"] == "task_success" for event in events):
-        return events
-
+def detect_task_failure(frames, events, cfg):
     route_deviation_frame = first_true_frame(frames, "route_deviation")
-    if route_deviation_frame is not None:
+    if failure_enabled(cfg, "route_deviation", default=True) and route_deviation_frame is not None:
         events.append({
             "event": "task_failure",
             "timestamp": route_deviation_frame.get("timestamp", 0.0),
@@ -497,7 +547,7 @@ def detect_task_failure(frames, events):
         return events
 
     red_light_frame = first_true_frame(frames, "red_light_violation")
-    if red_light_frame is not None:
+    if failure_enabled(cfg, "red_light_violation", default=True) and red_light_frame is not None:
         events.append({
             "event": "task_failure",
             "timestamp": red_light_frame.get("timestamp", 0.0),
@@ -507,7 +557,7 @@ def detect_task_failure(frames, events):
         return events
 
     lane_invasion_frame = first_true_frame(frames, "lane_invasion")
-    if lane_invasion_frame is not None:
+    if failure_enabled(cfg, "lane_invasion", default=True) and lane_invasion_frame is not None:
         events.append({
             "event": "task_failure",
             "timestamp": lane_invasion_frame.get("timestamp", 0.0),
@@ -517,7 +567,7 @@ def detect_task_failure(frames, events):
         return events
 
     collision_event = next((event for event in events if event["event"] == "collision"), None)
-    if collision_event is not None:
+    if failure_enabled(cfg, "collision", default=True) and collision_event is not None:
         events.append({
             "event": "task_failure",
             "timestamp": collision_event.get("timestamp", 0.0),
@@ -526,7 +576,7 @@ def detect_task_failure(frames, events):
         })
         return events
 
-    if any(event["event"] == "lane_change_timeout" for event in events):
+    if failure_enabled(cfg, "lane_change_timeout", default=True) and any(event["event"] == "lane_change_timeout" for event in events):
         timeout_event = next(event for event in events if event["event"] == "lane_change_timeout")
         events.append({
             "event": "task_failure",
@@ -534,6 +584,9 @@ def detect_task_failure(frames, events):
             "success": False,
             "failure_reason": "lane_change_timeout",
         })
+        return events
+
+    if any(event["event"] == "task_success" for event in events):
         return events
 
     last_timestamp = float(frames[-1].get("timestamp", 0.0)) if frames else 0.0
@@ -555,7 +608,7 @@ def build_events(cfg, frames):
     events.extend(detect_cone_detour(frames, cfg))
     events.extend(detect_cut_in_brake(frames, cfg))
     events.extend(detect_rain_night_slowdown(frames, cfg))
-    events = detect_task_failure(frames, events)
+    events = detect_task_failure(frames, events, cfg)
     return sorted(events, key=lambda event: (float(event.get("timestamp", 0.0)), event.get("event", "")))
 
 

@@ -7,9 +7,27 @@ import carla
 import yaml
 
 try:
-    from carla_eval.runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+    from carla_eval.runtime_metrics import (
+        LaneInvasionTracker,
+        RedLightViolationTracker,
+        RouteTracker,
+        apply_weather_from_config,
+        get_controller_param,
+        get_instruction_trigger_time,
+        load_world_for_config,
+        make_transform_from_config,
+    )
 except ModuleNotFoundError:
-    from runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+    from runtime_metrics import (
+        LaneInvasionTracker,
+        RedLightViolationTracker,
+        RouteTracker,
+        apply_weather_from_config,
+        get_controller_param,
+        get_instruction_trigger_time,
+        load_world_for_config,
+        make_transform_from_config,
+    )
 
 
 def clip(x, low, high):
@@ -97,11 +115,11 @@ def get_next_target_location(wp, lookahead):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--spawn-index", type=int, default=49)
-    parser.add_argument("--duration", type=float, default=45.0)
-    parser.add_argument("--target-speed", type=float, default=35.0)
-    parser.add_argument("--lookahead", type=float, default=12.0)
-    parser.add_argument("--log-id", type=str, default="S02_lane_change")
+    parser.add_argument("--spawn-index", type=int, default=None)
+    parser.add_argument("--duration", type=float, default=None)
+    parser.add_argument("--target-speed", type=float, default=None)
+    parser.add_argument("--lookahead", type=float, default=None)
+    parser.add_argument("--log-id", type=str, default=None)
     parser.add_argument(
         "--config",
         type=str,
@@ -113,29 +131,43 @@ def main():
 
     with config_path.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    cfg["__config_path__"] = str(config_path.resolve())
 
-    trigger_time = float(cfg["instructions"][0]["trigger"]["value"])
+    scenario_id = cfg.get("scenario_id", config_path.stem)
+    category = cfg.get("category", "basic_control")
+    runtime_cfg = cfg.get("runtime", {})
+    eval_cfg = cfg.get("evaluation", {})
+    primary_instruction_id = cfg.get("instructions", [{}])[0].get("id", "cmd_001")
+    trigger_time = get_instruction_trigger_time(cfg, default=5.0)
+    target_speed = float(args.target_speed if args.target_speed is not None else get_controller_param(cfg, "target_speed_kmh", 35.0))
+    lookahead = float(args.lookahead if args.lookahead is not None else get_controller_param(cfg, "lookahead_m", 12.0))
+    duration = float(args.duration if args.duration is not None else runtime_cfg.get("max_duration_seconds", 45.0))
+    post_success_hold_seconds = float(runtime_cfg.get("post_success_hold_seconds", 5.0))
+    route_corridor_half_width = float(eval_cfg.get("route_corridor_half_width_m", 6.0))
+    red_light_lane_tolerance = float(eval_cfg.get("red_light_lane_tolerance_m", 6.0))
     lane_cfg = cfg.get("success_criteria", {}).get("lane_change", {})
     required_hold_seconds = float(lane_cfg.get("required_hold_seconds", 2.0))
     max_completion_time = float(lane_cfg.get("max_completion_time_seconds", 20.0))
 
-    log_scenario_id = args.log_id
-    out_dir = Path("logs/basic_control") / log_scenario_id
+    log_scenario_id = args.log_id or scenario_id
+    out_dir = Path("logs") / category / log_scenario_id
     out_dir.mkdir(parents=True, exist_ok=True)
     log_path = out_dir / "frames.jsonl"
 
     client = carla.Client("localhost", 2000)
     client.set_timeout(10.0)
 
-    world = client.get_world()
+    world = load_world_for_config(client, cfg)
+    apply_weather_from_config(world, cfg)
     carla_map = world.get_map()
     blueprint_library = world.get_blueprint_library()
 
     original_settings = world.get_settings()
     settings = world.get_settings()
     settings.synchronous_mode = True
-    settings.fixed_delta_seconds = 0.05
+    settings.fixed_delta_seconds = float(runtime_cfg.get("fixed_delta_seconds", 0.05))
     world.apply_settings(settings)
+    dt = float(settings.fixed_delta_seconds)
 
     ego = None
     collision_sensor = None
@@ -158,10 +190,16 @@ def main():
         vehicle_type = cfg.get("ego", {}).get("vehicle_type", "vehicle.tesla.model3")
         vehicle_bp = blueprint_library.find(vehicle_type)
 
-        spawn_points = carla_map.get_spawn_points()
-        spawn_index = args.spawn_index % len(spawn_points)
-        spawn_point = spawn_points[spawn_index]
-        spawn_point.location.z += 0.5
+        spawn_point = make_transform_from_config(cfg)
+        spawn_source = "config"
+        spawn_index = None
+
+        if args.spawn_index is not None:
+            spawn_points = carla_map.get_spawn_points()
+            spawn_index = args.spawn_index % len(spawn_points)
+            spawn_point = spawn_points[spawn_index]
+            spawn_point.location.z += 0.5
+            spawn_source = f"spawn_index={spawn_index}"
 
         initial_wp = get_waypoint(carla_map, spawn_point.location)
         target_wp = initial_wp.get_left_lane()
@@ -177,8 +215,8 @@ def main():
         target_lane_id = target_wp.lane_id
         target_road_id = target_wp.road_id
 
-        print(f"[INFO] total spawn points = {len(spawn_points)}")
-        print(f"[INFO] using spawn_index = {spawn_index}")
+        print(f"[INFO] map = {carla_map.name}")
+        print(f"[INFO] spawn source = {spawn_source}")
         print(
             f"[INFO] initial road/lane = {initial_road_id}/{initial_lane_id}, "
             f"target road/lane = {target_road_id}/{target_lane_id}"
@@ -210,62 +248,66 @@ def main():
 
         collision_sensor.listen(on_collision)
         lane_invasion_tracker = LaneInvasionTracker(world, blueprint_library, ego)
-        route_tracker = RouteTracker.from_spawn_transform(
+        route_tracker = RouteTracker.from_route_config(
             carla_map,
-            spawn_point,
-            corridor_half_width_m=6.0,
+            cfg,
+            corridor_half_width_m=route_corridor_half_width,
         )
         red_light_tracker = RedLightViolationTracker(
             world,
             route_tracker.ref_loc,
             route_tracker.ref_forward,
             route_tracker.ref_right,
-            lane_tolerance_m=6.0,
+            lane_tolerance_m=red_light_lane_tolerance,
         )
 
-        max_frames = int(args.duration / 0.05)
+        max_frames = int(duration / dt)
         target_lane_hold_time = 0.0
         lane_change_completed = False
         lane_change_completed_time = None
+        success_time = None
 
         print(f"[START] Running {log_scenario_id}")
         print(f"[INFO] config = {config_path}")
         print(f"[INFO] trigger_time = {trigger_time} s")
-        print(f"[INFO] target_speed = {args.target_speed} km/h")
-        print(f"[INFO] lookahead = {args.lookahead} m")
+        print(f"[INFO] target_speed = {target_speed} km/h")
+        print(f"[INFO] lookahead = {lookahead} m")
         print(f"[INFO] log_path = {log_path}")
 
         with log_path.open("w", encoding="utf-8") as f:
             for frame in range(max_frames):
-                timestamp = frame * 0.05
+                timestamp = frame * dt
                 loc = ego.get_location()
                 current_wp = get_waypoint(carla_map, loc)
+                route_metrics_before = route_tracker.measure(loc)
+                route_target_loc = route_tracker.point_at_progress(
+                    route_metrics_before["max_route_progress_m"] + lookahead
+                )
 
                 current_lane_id = current_wp.lane_id
                 current_road_id = current_wp.road_id
 
                 lane_change_started = timestamp >= trigger_time
+                in_target_lane_before = current_lane_id == target_lane_id
 
                 if not lane_change_started:
                     # 触发前：沿当前车道行驶
-                    target_loc = get_next_target_location(current_wp, args.lookahead)
+                    target_loc = get_next_target_location(current_wp, lookahead)
                 else:
-                    # 触发后：如果还没进目标车道，就瞄准左侧车道中心线前方
-                    if current_lane_id == target_lane_id:
-                        target_loc = get_next_target_location(current_wp, args.lookahead)
+                    # 触发后：
+                    # 1. 用配置 route 完成进入目标车道，避免路口 waypoint 分支歧义；
+                    # 2. 一旦已经进入目标车道且 route 已走到尾部，切回目标车道正常 lane keeping，
+                    #    避免继续追逐 route 末端固定点而产生回头/转圈。
+                    if in_target_lane_before and route_metrics_before["route_completion"] >= 0.98:
+                        target_loc = get_next_target_location(current_wp, lookahead)
                     else:
-                        left_wp = current_wp.get_left_lane()
-                        if is_valid_adjacent_lane(current_wp, left_wp):
-                            target_loc = get_next_target_location(left_wp, args.lookahead)
-                        else:
-                            # 如果当前位置已经无法找到左车道，继续朝初始目标车道前方走
-                            target_loc = get_next_target_location(target_wp, args.lookahead)
+                        target_loc = route_target_loc
 
                 speed_kmh = get_speed_kmh(ego)
                 steer = compute_steer_to_location(ego, target_loc)
                 throttle, brake = compute_speed_control(
                     speed_kmh,
-                    args.target_speed,
+                    target_speed,
                     steer,
                 )
 
@@ -300,7 +342,7 @@ def main():
                 in_target_lane = current_lane_id == target_lane_id
 
                 if lane_change_started and in_target_lane and not collision_info["value"]:
-                    target_lane_hold_time += 0.05
+                    target_lane_hold_time += dt
                 else:
                     target_lane_hold_time = 0.0
 
@@ -310,9 +352,11 @@ def main():
                 ):
                     lane_change_completed = True
                     lane_change_completed_time = timestamp
+                    success_time = timestamp
                     print(
                         f"[SUCCESS] lane change completed and held for "
-                        f"{required_hold_seconds:.1f}s at t={timestamp:.1f}s"
+                        f"{required_hold_seconds:.1f}s at t={timestamp:.1f}s, "
+                        f"continuing for {post_success_hold_seconds:.1f}s."
                     )
 
                 # spectator 跟随
@@ -335,7 +379,7 @@ def main():
                     "timestamp": timestamp,
                     "frame": frame,
                     "scenario_id": log_scenario_id,
-                    "instruction_id": "cmd_001" if timestamp >= trigger_time else None,
+                    "instruction_id": primary_instruction_id if timestamp >= trigger_time else None,
                     "ego_x": loc.x,
                     "ego_y": loc.y,
                     "ego_z": loc.z,
@@ -390,7 +434,7 @@ def main():
                         f"other={collision_info['other_actor']}"
                     )
 
-                if lane_change_completed:
+                if success_time is not None and timestamp >= success_time + post_success_hold_seconds:
                     break
 
                 if collision_info["value"] and timestamp > 2.0:

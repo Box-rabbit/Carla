@@ -7,9 +7,27 @@ import carla
 import yaml
 
 try:
-    from carla_eval.runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+    from carla_eval.runtime_metrics import (
+        LaneInvasionTracker,
+        RedLightViolationTracker,
+        RouteTracker,
+        apply_weather_from_config,
+        get_controller_param,
+        get_instruction_trigger_time,
+        load_world_for_config,
+        make_transform_from_config,
+    )
 except ModuleNotFoundError:
-    from runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+    from runtime_metrics import (
+        LaneInvasionTracker,
+        RedLightViolationTracker,
+        RouteTracker,
+        apply_weather_from_config,
+        get_controller_param,
+        get_instruction_trigger_time,
+        load_world_for_config,
+        make_transform_from_config,
+    )
 
 
 def clip(x, low, high):
@@ -235,11 +253,11 @@ def observe_front_vehicle(
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--spawn-index", type=int, default=49)
-    parser.add_argument("--duration", type=float, default=40.0)
-    parser.add_argument("--target-speed", type=float, default=30.0)
-    parser.add_argument("--lookahead", type=float, default=14.0)
-    parser.add_argument("--log-id", type=str, default="S07_cut_in_brake")
+    parser.add_argument("--spawn-index", type=int, default=None)
+    parser.add_argument("--duration", type=float, default=None)
+    parser.add_argument("--target-speed", type=float, default=None)
+    parser.add_argument("--lookahead", type=float, default=None)
+    parser.add_argument("--log-id", type=str, default="S07_cut_in_brake_realistic_urgent")
     parser.add_argument(
         "--config",
         type=str,
@@ -250,12 +268,32 @@ def main():
     config_path = Path(args.config)
     with config_path.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    cfg["__config_path__"] = str(config_path.resolve())
+
+    scenario_id = cfg.get("scenario_id", config_path.stem)
+    category = cfg.get("category", "emergency_response")
+    runtime_cfg = cfg.get("runtime", {})
+    eval_cfg = cfg.get("evaluation", {})
+    primary_instruction_id = cfg.get("instructions", [{}])[0].get("id", "cmd_001")
+    trigger_time = get_instruction_trigger_time(cfg, default=5.0)
+    target_speed = float(args.target_speed if args.target_speed is not None else get_controller_param(cfg, "target_speed_kmh", 30.0))
+    lookahead = float(args.lookahead if args.lookahead is not None else get_controller_param(cfg, "lookahead_m", 14.0))
+    duration = float(args.duration if args.duration is not None else runtime_cfg.get("max_duration_seconds", 40.0))
+    post_success_hold_seconds = float(runtime_cfg.get("post_success_hold_seconds", 5.0))
+    route_corridor_half_width = float(eval_cfg.get("route_corridor_half_width_m", 5.5))
+    red_light_lane_tolerance = float(eval_cfg.get("red_light_lane_tolerance_m", 5.5))
 
     cut_cfg = cfg.get("success_criteria", {}).get("cut_in_brake", {})
     detection_distance = float(cut_cfg.get("detection_distance_m", 45.0))
     front_corridor_half_width = float(cut_cfg.get("front_corridor_half_width_m", 1.8))
     emergency_brake_distance = float(cut_cfg.get("emergency_brake_distance_m", 18.0))
     emergency_brake_ttc = float(cut_cfg.get("emergency_brake_ttc_s", 3.0))
+    cut_in_attention_distance = float(
+        cut_cfg.get("cut_in_attention_distance_m", max(emergency_brake_distance + 10.0, 25.0))
+    )
+    cut_in_attention_ttc = float(
+        cut_cfg.get("cut_in_attention_ttc_s", max(emergency_brake_ttc + 2.5, 5.0))
+    )
     safe_follow_distance = float(cut_cfg.get("safe_follow_distance_m", 8.0))
     safe_speed_kmh = float(cut_cfg.get("safe_speed_kmh", 8.0))
     required_safe_follow_seconds = float(cut_cfg.get("required_safe_follow_seconds", 1.0))
@@ -277,22 +315,25 @@ def main():
     brake_strength = float(behavior.get("brake_strength", 0.75))
     npc_brake_start_time = cut_in_start_time + cut_in_duration + brake_start_after_cut_in
 
-    out_dir = Path("logs/emergency_response") / args.log_id
+    log_scenario_id = args.log_id or scenario_id
+    out_dir = Path("logs") / category / log_scenario_id
     out_dir.mkdir(parents=True, exist_ok=True)
     log_path = out_dir / "frames.jsonl"
 
     client = carla.Client("localhost", 2000)
     client.set_timeout(10.0)
 
-    world = client.get_world()
+    world = load_world_for_config(client, cfg)
+    apply_weather_from_config(world, cfg)
     carla_map = world.get_map()
     bp_lib = world.get_blueprint_library()
 
     original_settings = world.get_settings()
     settings = world.get_settings()
     settings.synchronous_mode = True
-    settings.fixed_delta_seconds = 0.05
+    settings.fixed_delta_seconds = float(runtime_cfg.get("fixed_delta_seconds", 0.05))
     world.apply_settings(settings)
+    dt = float(settings.fixed_delta_seconds)
 
     ego = None
     npc = None
@@ -315,9 +356,16 @@ def main():
 
         world.tick()
 
-        spawn_points = carla_map.get_spawn_points()
-        spawn = spawn_points[args.spawn_index % len(spawn_points)]
-        spawn.location.z += 0.5
+        spawn = make_transform_from_config(cfg)
+        spawn_source = "config"
+        spawn_index = None
+
+        if args.spawn_index is not None:
+            spawn_points = carla_map.get_spawn_points()
+            spawn_index = args.spawn_index % len(spawn_points)
+            spawn = spawn_points[spawn_index]
+            spawn.location.z += 0.5
+            spawn_source = f"spawn_index={spawn_index}"
 
         ego_bp = bp_lib.find(cfg.get("ego", {}).get("vehicle_type", "vehicle.tesla.model3"))
         ego = world.try_spawn_actor(ego_bp, spawn)
@@ -356,23 +404,20 @@ def main():
         ref_loc = carla.Location(x=spawn.location.x, y=spawn.location.y, z=spawn.location.z)
         ref_forward = spawn.get_forward_vector()
         ref_right = spawn.get_right_vector()
-        route_tracker = RouteTracker(
-            carla_map=carla_map,
-            ref_loc=ref_loc,
-            ref_forward=ref_forward,
-            ref_right=ref_right,
-            route_length_m=100.0,
-            corridor_half_width_m=5.5,
+        route_tracker = RouteTracker.from_route_config(
+            carla_map,
+            cfg,
+            corridor_half_width_m=route_corridor_half_width,
         )
         red_light_tracker = RedLightViolationTracker(
             world,
-            ref_loc,
-            ref_forward,
-            ref_right,
-            lane_tolerance_m=5.5,
+            route_tracker.ref_loc,
+            route_tracker.ref_forward,
+            route_tracker.ref_right,
+            lane_tolerance_m=red_light_lane_tolerance,
         )
 
-        max_frames = int(args.duration / 0.05)
+        max_frames = int(duration / dt)
 
         state = "CRUISE"
 
@@ -383,6 +428,7 @@ def main():
         first_detection_time = None
         emergency_brake_started_time = None
         safe_brake_completed_time = None
+        success_time = None
 
         safe_follow_hold_time = 0.0
 
@@ -391,18 +437,24 @@ def main():
         max_brake = 0.0
 
         print(f"[INFO] map = {carla_map.name}")
-        print(f"[INFO] spawn_index = {args.spawn_index}")
+        print(f"[INFO] spawn source = {spawn_source}")
         print(f"[INFO] ego spawn = ({spawn.location.x:.2f}, {spawn.location.y:.2f}, {spawn.location.z:.2f})")
         print("[INFO] S07 ego trigger mode = detection/TTC based, no oracle cut-in time")
+        print(f"[INFO] config = {config_path}")
+        print(f"[INFO] trigger_time = {trigger_time} s")
+        print(f"[INFO] target_speed = {target_speed} km/h")
+        print(f"[INFO] lookahead = {lookahead} m")
         print(f"[INFO] npc initial longitudinal = {npc_initial_longitudinal} m")
         print(f"[INFO] npc initial lateral = {npc_initial_lateral} m")
         print(f"[INFO] npc cut-in start = {cut_in_start_time} s")
         print(f"[INFO] npc brake start = {npc_brake_start_time} s")
+        print(f"[INFO] cut-in attention distance = {cut_in_attention_distance} m")
+        print(f"[INFO] cut-in attention TTC = {cut_in_attention_ttc} s")
         print(f"[INFO] log_path = {log_path}")
 
         with log_path.open("w", encoding="utf-8") as f:
             for frame in range(max_frames):
-                timestamp = frame * 0.05
+                timestamp = frame * dt
 
                 npc_tf, npc_progress, npc_lateral, npc_speed_mps = scripted_cut_in_vehicle_state(
                     timestamp=timestamp,
@@ -418,10 +470,8 @@ def main():
                 )
                 npc.set_transform(npc_tf)
 
-                world.tick()
-
                 ego_loc = ego.get_location()
-                npc_loc = npc.get_location()
+                npc_loc = npc_tf.location
 
                 obs = observe_front_vehicle(
                     ego=ego,
@@ -442,7 +492,15 @@ def main():
                 if ttc is not None:
                     min_ttc = min(min_ttc, ttc)
 
-                if front_detected and not cut_in_detected_once:
+                actionable_cut_in_detected = (
+                    front_detected
+                    and (
+                        (front_gap is not None and front_gap <= cut_in_attention_distance)
+                        or (ttc is not None and ttc <= cut_in_attention_ttc)
+                    )
+                )
+
+                if actionable_cut_in_detected and not cut_in_detected_once:
                     cut_in_detected_once = True
                     first_detection_time = timestamp
                     print(
@@ -478,7 +536,7 @@ def main():
                 if state == "CRUISE":
                     throttle, brake = compute_cruise_control(
                         ego_speed_kmh,
-                        args.target_speed,
+                        target_speed,
                     )
                 elif state == "EMERGENCY_BRAKE":
                     throttle, brake = compute_emergency_control(
@@ -494,7 +552,7 @@ def main():
                         and ego_speed_kmh <= safe_speed_kmh
                         and not collision_info["value"]
                     ):
-                        safe_follow_hold_time += 0.05
+                        safe_follow_hold_time += dt
                     else:
                         safe_follow_hold_time = 0.0
 
@@ -502,29 +560,22 @@ def main():
                         state = "COMPLETE"
                         safe_brake_completed = True
                         safe_brake_completed_time = timestamp
+                        success_time = timestamp
                         print(
                             f"[SUCCESS] safe brake completed at t={timestamp:.1f}s, "
                             f"gap={fmt(front_gap)}m, speed={ego_speed_kmh:.1f}km/h, "
-                            f"hold={safe_follow_hold_time:.1f}s"
+                            f"hold={safe_follow_hold_time:.1f}s, "
+                            f"continuing for {post_success_hold_seconds:.1f}s."
                         )
                 else:
-                    throttle, brake = 0.0, 0.2
+                    throttle, brake = 0.0, (0.10 if ego_speed_kmh > 1.0 else 0.02)
 
                 max_brake = max(max_brake, brake)
 
-                ego_rel = carla.Location(
-                    x=ego_loc.x - ref_loc.x,
-                    y=ego_loc.y - ref_loc.y,
-                    z=0.0,
-                )
-                ego_progress = dot2d(ego_rel, ref_forward)
-
-                target_progress = ego_progress + args.lookahead
-                target_loc = carla.Location(
-                    x=ref_loc.x + target_progress * ref_forward.x,
-                    y=ref_loc.y + target_progress * ref_forward.y,
-                    z=ref_loc.z,
-                )
+                route_metrics_before = route_tracker.measure(ego_loc)
+                ego_progress = route_metrics_before["route_progress_m"]
+                target_progress = ego_progress + lookahead
+                target_loc = route_tracker.point_at_progress(target_progress)
 
                 steer = compute_steer_to_location(ego, target_loc)
 
@@ -537,43 +588,48 @@ def main():
 
                 ego.apply_control(control)
 
+                response_time_s = None
+                if first_detection_time is not None and emergency_brake_started_time is not None:
+                    response_time_s = emergency_brake_started_time - first_detection_time
+
+                world.tick()
+
+                ego_loc_after = ego.get_location()
+                ego_speed_kmh_after = get_speed_kmh(ego)
+                npc_loc_after = npc.get_location()
+                lane_invasion_metrics = lane_invasion_tracker.snapshot()
+                route_metrics = route_tracker.measure(ego_loc_after)
+                red_light_metrics = red_light_tracker.update(ego_loc_after, ego_speed_kmh_after)
+
                 ego_tf = ego.get_transform()
                 forward = ego_tf.get_forward_vector()
                 spectator = world.get_spectator()
                 spectator.set_transform(
                     carla.Transform(
                         carla.Location(
-                            x=ego_loc.x - 12.0 * forward.x,
-                            y=ego_loc.y - 12.0 * forward.y,
-                            z=ego_loc.z + 6.0,
+                            x=ego_loc_after.x - 12.0 * forward.x,
+                            y=ego_loc_after.y - 12.0 * forward.y,
+                            z=ego_loc_after.z + 6.0,
                         ),
                         carla.Rotation(pitch=-22.0, yaw=ego_tf.rotation.yaw, roll=0.0),
                     )
                 )
 
-                response_time_s = None
-                if first_detection_time is not None and emergency_brake_started_time is not None:
-                    response_time_s = emergency_brake_started_time - first_detection_time
-
-                lane_invasion_metrics = lane_invasion_tracker.snapshot()
-                route_metrics = route_tracker.measure(ego_loc)
-                red_light_metrics = red_light_tracker.update(ego_loc, ego_speed_kmh)
-
                 record = {
                     "timestamp": timestamp,
                     "frame": frame,
-                    "scenario_id": args.log_id,
+                    "scenario_id": log_scenario_id,
                     "state": state,
-                    "instruction_id": "cmd_001" if timestamp >= 5.0 else None,
+                    "instruction_id": primary_instruction_id if timestamp >= trigger_time else None,
 
-                    "ego_x": ego_loc.x,
-                    "ego_y": ego_loc.y,
-                    "ego_z": ego_loc.z,
-                    "ego_speed_kmh": ego_speed_kmh,
+                    "ego_x": ego_loc_after.x,
+                    "ego_y": ego_loc_after.y,
+                    "ego_z": ego_loc_after.z,
+                    "ego_speed_kmh": ego_speed_kmh_after,
 
-                    "npc_x": npc_loc.x,
-                    "npc_y": npc_loc.y,
-                    "npc_z": npc_loc.z,
+                    "npc_x": npc_loc_after.x,
+                    "npc_y": npc_loc_after.y,
+                    "npc_z": npc_loc_after.z,
                     "npc_progress": npc_progress,
                     "npc_lateral": npc_lateral,
                     "npc_speed_kmh": 3.6 * npc_speed_mps,
@@ -635,7 +691,7 @@ def main():
                     print(
                         f"t={timestamp:.1f}s "
                         f"state={state} "
-                        f"ego_v={ego_speed_kmh:.1f} "
+                        f"ego_v={ego_speed_kmh_after:.1f} "
                         f"npc_v={3.6 * npc_speed_mps:.1f} "
                         f"gap={fmt(front_gap)} "
                         f"ttc={fmt(ttc)} "
@@ -645,7 +701,7 @@ def main():
                         f"other={collision_info['other_actor']}"
                     )
 
-                if safe_brake_completed:
+                if success_time is not None and timestamp >= success_time + post_success_hold_seconds:
                     break
 
                 if collision_info["value"] and timestamp > 2.0:

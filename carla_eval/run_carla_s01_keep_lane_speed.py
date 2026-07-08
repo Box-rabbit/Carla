@@ -7,9 +7,27 @@ import carla
 import yaml
 
 try:
-    from carla_eval.runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+    from carla_eval.runtime_metrics import (
+        LaneInvasionTracker,
+        RedLightViolationTracker,
+        RouteTracker,
+        apply_weather_from_config,
+        get_controller_param,
+        get_instruction_trigger_time,
+        load_world_for_config,
+        make_transform_from_config,
+    )
 except ModuleNotFoundError:
-    from runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+    from runtime_metrics import (
+        LaneInvasionTracker,
+        RedLightViolationTracker,
+        RouteTracker,
+        apply_weather_from_config,
+        get_controller_param,
+        get_instruction_trigger_time,
+        load_world_for_config,
+        make_transform_from_config,
+    )
 
 
 def clip(x, low, high):
@@ -21,21 +39,24 @@ def get_speed_kmh(vehicle):
     return 3.6 * (v.x ** 2 + v.y ** 2 + v.z ** 2) ** 0.5
 
 
-def compute_waypoint_steer(vehicle, carla_map, lookahead=18.0):
-    transform = vehicle.get_transform()
-    loc = transform.location
-
-    wp = carla_map.get_waypoint(
-        loc,
+def get_waypoint(carla_map, location):
+    return carla_map.get_waypoint(
+        location,
         project_to_road=True,
         lane_type=carla.LaneType.Driving,
     )
 
+
+def get_next_target_location(wp, lookahead):
     next_wps = wp.next(lookahead)
     if not next_wps:
-        return 0.0, wp.transform.location
+        return wp.transform.location
+    return next_wps[0].transform.location
 
-    target_loc = next_wps[0].transform.location
+
+def compute_steer_to_location(vehicle, target_loc):
+    transform = vehicle.get_transform()
+    loc = transform.location
 
     forward = transform.get_forward_vector()
     right = transform.get_right_vector()
@@ -51,7 +72,7 @@ def compute_waypoint_steer(vehicle, carla_map, lookahead=18.0):
     # 高速下方向不要太猛
     steer = clip(1.25 * angle, -0.45, 0.45)
 
-    return steer, target_loc
+    return steer
 
 
 def compute_speed_control(speed_kmh, target_speed_kmh, steer):
@@ -93,11 +114,11 @@ def compute_speed_control(speed_kmh, target_speed_kmh, steer):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--spawn-index", type=int, default=50)
-    parser.add_argument("--duration", type=float, default=60.0)
-    parser.add_argument("--target-speed", type=float, default=60.0)
-    parser.add_argument("--lookahead", type=float, default=18.0)
-    parser.add_argument("--log-id", type=str, default="S01_keep_lane_speed_60")
+    parser.add_argument("--spawn-index", type=int, default=None)
+    parser.add_argument("--duration", type=float, default=None)
+    parser.add_argument("--target-speed", type=float, default=None)
+    parser.add_argument("--lookahead", type=float, default=None)
+    parser.add_argument("--log-id", type=str, default=None)
     parser.add_argument(
         "--config",
         type=str,
@@ -109,25 +130,44 @@ def main():
 
     with config_path.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    cfg["__config_path__"] = str(config_path.resolve())
 
-    log_scenario_id = args.log_id
+    scenario_id = cfg.get("scenario_id", config_path.stem)
+    category = cfg.get("category", "basic_control")
+    runtime_cfg = cfg.get("runtime", {})
+    target_cfg = cfg.get("success_criteria", {}).get("target_speed", {})
+    eval_cfg = cfg.get("evaluation", {})
+    primary_instruction_id = cfg.get("instructions", [{}])[0].get("id", "cmd_001")
 
-    out_dir = Path("logs") / log_scenario_id
+    trigger_time = get_instruction_trigger_time(cfg, default=5.0)
+    target_speed = float(args.target_speed if args.target_speed is not None else target_cfg.get("value_kmh", 60.0))
+    lookahead = float(args.lookahead if args.lookahead is not None else get_controller_param(cfg, "lookahead_m", 18.0))
+    duration = float(args.duration if args.duration is not None else runtime_cfg.get("max_duration_seconds", 60.0))
+    post_success_hold_seconds = float(runtime_cfg.get("post_success_hold_seconds", 5.0))
+    required_hold_seconds = float(target_cfg.get("required_hold_seconds", 2.0))
+    target_tolerance = float(target_cfg.get("tolerance_kmh", 8.0))
+    route_corridor_half_width = float(eval_cfg.get("route_corridor_half_width_m", 3.0))
+    red_light_lane_tolerance = float(eval_cfg.get("red_light_lane_tolerance_m", 5.5))
+    log_scenario_id = args.log_id or scenario_id
+
+    out_dir = Path("logs") / category / log_scenario_id
     out_dir.mkdir(parents=True, exist_ok=True)
     log_path = out_dir / "frames.jsonl"
 
     client = carla.Client("localhost", 2000)
     client.set_timeout(10.0)
 
-    world = client.get_world()
+    world = load_world_for_config(client, cfg)
+    apply_weather_from_config(world, cfg)
     carla_map = world.get_map()
     blueprint_library = world.get_blueprint_library()
 
     original_settings = world.get_settings()
     settings = world.get_settings()
     settings.synchronous_mode = True
-    settings.fixed_delta_seconds = 0.05
+    settings.fixed_delta_seconds = float(runtime_cfg.get("fixed_delta_seconds", 0.05))
     world.apply_settings(settings)
+    dt = float(settings.fixed_delta_seconds)
 
     ego = None
     collision_sensor = None
@@ -150,16 +190,21 @@ def main():
         vehicle_type = cfg.get("ego", {}).get("vehicle_type", "vehicle.tesla.model3")
         vehicle_bp = blueprint_library.find(vehicle_type)
 
-        spawn_points = carla_map.get_spawn_points()
-        if not spawn_points:
-            raise RuntimeError("No spawn points found.")
+        spawn_point = make_transform_from_config(cfg)
+        spawn_source = "config"
+        spawn_index = None
 
-        spawn_index = args.spawn_index % len(spawn_points)
-        spawn_point = spawn_points[spawn_index]
-        spawn_point.location.z += 0.5
+        if args.spawn_index is not None:
+            spawn_points = carla_map.get_spawn_points()
+            if not spawn_points:
+                raise RuntimeError("No spawn points found.")
+            spawn_index = args.spawn_index % len(spawn_points)
+            spawn_point = spawn_points[spawn_index]
+            spawn_point.location.z += 0.5
+            spawn_source = f"spawn_index={spawn_index}"
 
-        print(f"[INFO] total spawn points = {len(spawn_points)}")
-        print(f"[INFO] using spawn_index = {spawn_index}")
+        print(f"[INFO] map = {carla_map.name}")
+        print(f"[INFO] spawn source = {spawn_source}")
         print(
             f"[INFO] spawn location = "
             f"({spawn_point.location.x:.2f}, "
@@ -188,43 +233,49 @@ def main():
 
         collision_sensor.listen(on_collision)
         lane_invasion_tracker = LaneInvasionTracker(world, blueprint_library, ego)
-        route_tracker = RouteTracker.from_spawn_transform(
+        route_tracker = RouteTracker.from_route_config(
             carla_map,
-            spawn_point,
-            corridor_half_width_m=3.0,
+            cfg,
+            corridor_half_width_m=route_corridor_half_width,
         )
         red_light_tracker = RedLightViolationTracker(
             world,
             route_tracker.ref_loc,
             route_tracker.ref_forward,
             route_tracker.ref_right,
+            lane_tolerance_m=red_light_lane_tolerance,
         )
 
-        target_speed = float(args.target_speed)
-        max_frames = int(args.duration / 0.05)
+        max_frames = int(duration / dt)
+        success_time = None
 
         print(f"[START] Running {log_scenario_id}")
         print(f"[INFO] config = {config_path}")
         print(f"[INFO] target_speed = {target_speed} km/h")
-        print(f"[INFO] lookahead = {args.lookahead} m")
+        print(f"[INFO] trigger_time = {trigger_time} s")
+        print(f"[INFO] lookahead = {lookahead} m")
         print(f"[INFO] log_path = {log_path}")
 
-        target_low = target_speed - 8.0
-        target_high = target_speed + 8.0
-        required_hold_seconds = 2.0
+        target_low = target_speed - target_tolerance
+        target_high = target_speed + target_tolerance
         success_hold_time = 0.0
 
         with log_path.open("w", encoding="utf-8") as f:
             for frame in range(max_frames):
-                timestamp = frame * 0.05
+                timestamp = frame * dt
 
                 speed_kmh = get_speed_kmh(ego)
+                ego_loc_before = ego.get_location()
+                route_metrics_before = route_tracker.measure(ego_loc_before)
+                current_wp = get_waypoint(carla_map, ego_loc_before)
 
-                steer, target_loc = compute_waypoint_steer(
-                    ego,
-                    carla_map,
-                    lookahead=args.lookahead,
-                )
+                # route 走到尾部后切回当前车道 lane keeping，避免继续追逐 route 末端点而偏航。
+                if route_metrics_before["route_completion"] >= 0.98:
+                    target_loc = get_next_target_location(current_wp, lookahead)
+                else:
+                    target_progress = route_metrics_before["route_progress_m"] + lookahead
+                    target_loc = route_tracker.point_at_progress(target_progress)
+                steer = compute_steer_to_location(ego, target_loc)
 
                 throttle, brake = compute_speed_control(
                     speed_kmh,
@@ -273,7 +324,7 @@ def main():
                     "timestamp": timestamp,
                     "frame": frame,
                     "scenario_id": log_scenario_id,
-                    "instruction_id": "cmd_001" if timestamp >= 3.0 else None,
+                    "instruction_id": primary_instruction_id if timestamp >= trigger_time else None,
                     "ego_x": loc.x,
                     "ego_y": loc.y,
                     "ego_z": loc.z,
@@ -320,16 +371,20 @@ def main():
                     )
 
                 # 达到目标速度区间并保持 2 秒后，立刻停止，避免后续路段撞墙污染成功日志
-                if target_low <= speed_kmh <= target_high and timestamp >= 3.0:
-                    success_hold_time += 0.05
+                if target_low <= speed_kmh <= target_high and timestamp >= trigger_time:
+                    success_hold_time += dt
                 else:
                     success_hold_time = 0.0
 
                 if success_hold_time >= required_hold_seconds:
-                    print(
-                        f"[SUCCESS] target speed held for "
-                        f"{required_hold_seconds:.1f}s, stopping this run."
-                    )
+                    if success_time is None:
+                        success_time = timestamp
+                        print(
+                            f"[SUCCESS] target speed held for {required_hold_seconds:.1f}s "
+                            f"at t={timestamp:.1f}s, continuing for {post_success_hold_seconds:.1f}s."
+                        )
+
+                if success_time is not None and timestamp >= success_time + post_success_hold_seconds:
                     break
 
                 if collision_info["value"] and timestamp > 2.0:

@@ -14,7 +14,7 @@
 - `S02_lane_change`
 - `S04_pedestrian_slowdown`
 - `S05_cone_detour`
-- `S07_cut_in_brake_realistic_urgent`
+- `S07_cut_in_brake`
 - `S08_rain_night_danger_slowdown`
 
 ## 2. 三大类别说明
@@ -89,9 +89,9 @@
 - Key metrics: `min_distance_to_cone ≈ 3.06 m`, `max_lateral_offset_m ≈ 3.47 m`, `success = true`, `collision_count = 0`
 - Result: 场景成功完成，ego 实现检测驱动的绕行和回归原车道，无碰撞。
 
-### 3.5 S07_cut_in_brake_realistic_urgent
+### 3.5 S07_cut_in_brake
 
-- Scenario ID: `S07_cut_in_brake_realistic_urgent`
+- Scenario ID: `S07_cut_in_brake`
 - Category: `emergency_response`
 - Goal: NPC 车辆从相邻车道切入 ego 前方并制动，ego 基于当前帧前车距离和 `TTC` 触发应急制动，保持安全距离且无碰撞。
 - Config path: `configs/scenarios/emergency_response/S07_cut_in_brake.yaml`
@@ -105,7 +105,7 @@
 
 Realistic urgent setting:
 
-- `ego target speed = 40 km/h`
+- `ego target speed = 30 km/h`
 - `NPC initial longitudinal distance = 26 m`
 - `NPC lateral offset = -3.5 m`
 - `NPC cruise speed = 18 km/h`
@@ -134,9 +134,9 @@ Realistic urgent setting:
 
 `S05_cone_detour` 不使用预先已知的最后一个锥桶位置，也不使用 oracle 终点判断。ego 的绕行决策完全基于当前帧前方原始行驶走廊内是否检测到锥桶。当前方无锥桶持续一段时间后，ego 才回归原车道，因此该场景体现的是检测驱动的真实闭环绕行逻辑。
 
-### 4.2 S07_cut_in_brake_realistic_urgent
+### 4.2 S07_cut_in_brake
 
-`S07_cut_in_brake_realistic_urgent` 中 ego 不使用 NPC 的脚本切入时间，也不使用 NPC 制动时间作为 oracle。ego 仅根据当前帧检测到的前方车辆距离与 `TTC` 触发制动，因此应急响应逻辑来自在线风险判断，而不是依赖脚本内部时序信息。
+`S07_cut_in_brake` 中 ego 不使用 NPC 的脚本切入时间，也不使用 NPC 制动时间作为 oracle。ego 仅根据当前帧检测到的前方车辆距离与 `TTC` 触发制动，因此应急响应逻辑来自在线风险判断，而不是依赖脚本内部时序信息。
 
 ### 4.3 S08_rain_night_danger_slowdown
 

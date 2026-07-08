@@ -6,20 +6,27 @@ runtime:
   random_seed: 42
   carla_version: 0.9.10.1
   fixed_delta_seconds: 0.05
-  max_duration_seconds: 120
+  max_duration_seconds: 300
+  post_success_hold_seconds: 5.0
 map:
   town: Town03
   weather: CloudySunset
 ego:
   vehicle_type: vehicle.tesla.model3
   spawn_point:
-    x: 0.0
-    y: 0.0
-    z: 0.3
-    yaw: 0.0
+    x: -36.631
+    y: -194.924
+    z: 0.5
+    yaw: 1.44
 route:
-  route_file: routes/emergency_response/dongfeng_emergency_response_example.xml
+  route_file: routes/emergency_response/S07_cut_in_brake.xml
   route_id: 0
+controller:
+  target_speed_kmh: 30.0
+  lookahead_m: 14.0
+evaluation:
+  route_corridor_half_width_m: 5.5
+  red_light_lane_tolerance_m: 5.5
 actors:
   vehicles:
   - id: cut_in_vehicle_001
@@ -58,6 +65,8 @@ success_criteria:
     front_corridor_half_width_m: 1.8
     emergency_brake_distance_m: 17.0
     emergency_brake_ttc_s: 3.0
+    cut_in_attention_distance_m: 27.0
+    cut_in_attention_ttc_s: 5.5
     safe_follow_distance_m: 7.0
     safe_speed_kmh: 10.0
     required_safe_follow_seconds: 1.0

@@ -1,4 +1,6 @@
 import math
+import xml.etree.ElementTree as ET
+from pathlib import Path
 
 import carla
 
@@ -15,6 +17,72 @@ def horizontal_distance(a, b):
     return math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
 
 
+def resolve_repo_relative_path(cfg, relative_path):
+    if not relative_path:
+        return None
+
+    path = Path(relative_path)
+    if path.is_absolute() and path.exists():
+        return path
+
+    if path.exists():
+        return path.resolve()
+
+    config_path = cfg.get("__config_path__")
+    if config_path:
+        repo_root = Path(config_path).resolve().parents[3]
+        candidate = repo_root / relative_path
+        if candidate.exists():
+            return candidate
+
+    return None
+
+
+def load_route_waypoints(cfg):
+    route_cfg = cfg.get("route", {})
+    route_file = resolve_repo_relative_path(cfg, route_cfg.get("route_file"))
+    if route_file is None or not route_file.exists():
+        return []
+
+    route_id = str(route_cfg.get("route_id", 0))
+    root = ET.parse(route_file).getroot()
+    for route in root.findall("route"):
+        if route.get("id") != route_id:
+            continue
+        points = []
+        for waypoint in route.findall("waypoint"):
+            points.append(carla.Location(
+                x=float(waypoint.get("x", 0.0)),
+                y=float(waypoint.get("y", 0.0)),
+                z=float(waypoint.get("z", 0.0)),
+            ))
+        return points
+
+    return []
+
+
+def route_length_from_points(points):
+    if len(points) < 2:
+        return 0.0
+    return sum(horizontal_distance(points[idx - 1], points[idx]) for idx in range(1, len(points)))
+
+
+def make_reference_from_points(points):
+    if len(points) >= 2:
+        start = points[0]
+        next_point = points[1]
+        dx = next_point.x - start.x
+        dy = next_point.y - start.y
+        norm = math.hypot(dx, dy)
+        if norm > 1e-6:
+            forward = carla.Vector3D(dx / norm, dy / norm, 0.0)
+            right = carla.Vector3D(-forward.y, forward.x, 0.0)
+            return start, forward, right
+
+    start = points[0] if points else carla.Location()
+    return start, carla.Vector3D(1.0, 0.0, 0.0), carla.Vector3D(0.0, 1.0, 0.0)
+
+
 def make_reference_from_transform(transform):
     ref_loc = carla.Location(
         x=transform.location.x,
@@ -24,6 +92,15 @@ def make_reference_from_transform(transform):
     ref_forward = transform.get_forward_vector()
     ref_right = transform.get_right_vector()
     return ref_loc, ref_forward, ref_right
+
+
+def make_location_along_transform(transform, distance_m):
+    forward = transform.get_forward_vector()
+    return carla.Location(
+        x=transform.location.x + distance_m * forward.x,
+        y=transform.location.y + distance_m * forward.y,
+        z=transform.location.z + distance_m * forward.z,
+    )
 
 
 def estimate_forward_route_length(carla_map, spawn_transform, step_m=2.0, max_distance_m=100.0):
@@ -48,6 +125,59 @@ def estimate_forward_route_length(carla_map, spawn_transform, step_m=2.0, max_di
         current = next_wp
 
     return max(total, step_m)
+
+
+def load_world_for_config(client, cfg):
+    desired_town = cfg.get("map", {}).get("town")
+    world = client.get_world()
+    if desired_town and not world.get_map().name.endswith(desired_town):
+        world = client.load_world(desired_town)
+    return world
+
+
+def apply_weather_from_config(world, cfg):
+    map_cfg = cfg.get("map", {})
+    weather_params = map_cfg.get("weather_parameters")
+    if weather_params:
+        world.set_weather(carla.WeatherParameters(**weather_params))
+        return
+
+    weather_name = map_cfg.get("weather")
+    if not weather_name:
+        return
+
+    if hasattr(carla.WeatherParameters, weather_name):
+        world.set_weather(getattr(carla.WeatherParameters, weather_name))
+
+
+def make_transform_from_config(cfg):
+    spawn = cfg.get("ego", {}).get("spawn_point", {})
+    return carla.Transform(
+        location=carla.Location(
+            x=float(spawn.get("x", 0.0)),
+            y=float(spawn.get("y", 0.0)),
+            z=float(spawn.get("z", 0.5)),
+        ),
+        rotation=carla.Rotation(
+            pitch=float(spawn.get("pitch", 0.0)),
+            yaw=float(spawn.get("yaw", 0.0)),
+            roll=float(spawn.get("roll", 0.0)),
+        ),
+    )
+
+
+def get_instruction_trigger_time(cfg, instruction_index=0, default=0.0):
+    instructions = cfg.get("instructions", [])
+    if instruction_index >= len(instructions):
+        return default
+    trigger = instructions[instruction_index].get("trigger", {})
+    if trigger.get("type") == "time":
+        return float(trigger.get("value", default))
+    return default
+
+
+def get_controller_param(cfg, name, default):
+    return cfg.get("controller", {}).get(name, default)
 
 
 class LaneInvasionTracker:
@@ -84,78 +214,177 @@ class LaneInvasionTracker:
 
 
 class RouteTracker:
-    def __init__(
-        self,
-        carla_map,
-        ref_loc,
-        ref_forward,
-        ref_right,
-        route_length_m,
-        corridor_half_width_m=4.5,
-        backward_tolerance_m=2.0,
-    ):
+    def __init__(self, carla_map, route_points, corridor_half_width_m=4.5, backward_tolerance_m=2.0):
         self.carla_map = carla_map
-        self.ref_loc = ref_loc
-        self.ref_forward = ref_forward
-        self.ref_right = ref_right
-        self.route_length_m = max(float(route_length_m), 1.0)
+        self.route_points = route_points
         self.corridor_half_width_m = float(corridor_half_width_m)
         self.backward_tolerance_m = float(backward_tolerance_m)
+        self.route_total_length_m = max(route_length_from_points(route_points), 1.0)
         self.max_progress_m = 0.0
+        self.ref_loc, self.ref_forward, self.ref_right = make_reference_from_points(route_points)
 
     @classmethod
-    def from_spawn_transform(
-        cls,
-        carla_map,
-        spawn_transform,
-        route_length_m=None,
-        corridor_half_width_m=4.5,
-    ):
-        ref_loc, ref_forward, ref_right = make_reference_from_transform(spawn_transform)
-        if route_length_m is None:
-            route_length_m = estimate_forward_route_length(carla_map, spawn_transform)
-        return cls(
-            carla_map=carla_map,
-            ref_loc=ref_loc,
-            ref_forward=ref_forward,
-            ref_right=ref_right,
-            route_length_m=route_length_m,
-            corridor_half_width_m=corridor_half_width_m,
+    def from_route_config(cls, carla_map, cfg, corridor_half_width_m=4.5):
+        route_points = load_route_waypoints(cfg)
+        if not route_points:
+            spawn = make_transform_from_config(cfg)
+            route_points = [
+                carla.Location(x=spawn.location.x, y=spawn.location.y, z=spawn.location.z),
+                make_location_along_transform(
+                    spawn,
+                    estimate_forward_route_length(carla_map, spawn),
+                ),
+            ]
+        return cls(carla_map, route_points, corridor_half_width_m=corridor_half_width_m)
+
+    def _segment_projection(self, point, seg_start, seg_end):
+        sx = seg_start.x
+        sy = seg_start.y
+        ex = seg_end.x
+        ey = seg_end.y
+        px = point.x
+        py = point.y
+
+        dx = ex - sx
+        dy = ey - sy
+        seg_len_sq = dx * dx + dy * dy
+        if seg_len_sq <= 1e-9:
+            projected = carla.Location(x=sx, y=sy, z=seg_start.z)
+            return 0.0, projected, horizontal_distance(point, projected), 0.0
+
+        t = ((px - sx) * dx + (py - sy) * dy) / seg_len_sq
+        t_clamped = clamp(t, 0.0, 1.0)
+        proj = carla.Location(
+            x=sx + t_clamped * dx,
+            y=sy + t_clamped * dy,
+            z=seg_start.z,
         )
+        dist = horizontal_distance(point, proj)
+        seg_len = math.sqrt(seg_len_sq)
+        forward = carla.Vector3D(dx / seg_len, dy / seg_len, 0.0)
+        right = carla.Vector3D(-forward.y, forward.x, 0.0)
+        rel = carla.Location(x=point.x - proj.x, y=point.y - proj.y, z=0.0)
+        lateral_offset = dot2d(rel, right)
+        return t_clamped, proj, dist, lateral_offset
 
     def measure(self, ego_loc):
-        ego_rel = carla.Location(
-            x=ego_loc.x - self.ref_loc.x,
-            y=ego_loc.y - self.ref_loc.y,
-            z=0.0,
-        )
-        progress_m = dot2d(ego_rel, self.ref_forward)
-        lateral_offset_m = dot2d(ego_rel, self.ref_right)
-        self.max_progress_m = max(self.max_progress_m, progress_m)
+        cumulative = 0.0
+        best = None
 
+        for idx in range(1, len(self.route_points)):
+            start = self.route_points[idx - 1]
+            end = self.route_points[idx]
+            seg_len = horizontal_distance(start, end)
+            t, proj, dist, lateral_offset = self._segment_projection(ego_loc, start, end)
+            progress = cumulative + t * seg_len
+
+            if best is None or dist < best["distance"]:
+                best = {
+                    "distance": dist,
+                    "progress": progress,
+                    "lateral_offset": lateral_offset,
+                }
+
+            cumulative += seg_len
+
+        if best is None:
+            best = {"distance": 0.0, "progress": 0.0, "lateral_offset": 0.0}
+
+        self.max_progress_m = max(self.max_progress_m, best["progress"])
         waypoint = self.carla_map.get_waypoint(
             ego_loc,
             project_to_road=False,
             lane_type=carla.LaneType.Driving,
         )
         on_driving_lane = waypoint is not None
-
         route_deviation = (
             (not on_driving_lane)
-            or abs(lateral_offset_m) > self.corridor_half_width_m
-            or progress_m < -self.backward_tolerance_m
+            or abs(best["lateral_offset"]) > self.corridor_half_width_m
+            or best["progress"] < -self.backward_tolerance_m
         )
 
-        route_completion = clamp(self.max_progress_m / self.route_length_m, 0.0, 1.0)
         return {
-            "route_progress_m": progress_m,
+            "route_progress_m": best["progress"],
             "max_route_progress_m": self.max_progress_m,
-            "route_total_length_m": self.route_length_m,
-            "route_completion": route_completion,
-            "lateral_offset_from_route_m": lateral_offset_m,
+            "route_total_length_m": self.route_total_length_m,
+            "route_completion": clamp(self.max_progress_m / self.route_total_length_m, 0.0, 1.0),
+            "lateral_offset_from_route_m": best["lateral_offset"],
+            "route_distance_to_centerline_m": best["distance"],
             "on_driving_lane": on_driving_lane,
             "route_deviation": route_deviation,
         }
+
+    def point_at_progress(self, progress_m, lateral_offset_m=0.0):
+        if not self.route_points:
+            return carla.Location()
+
+        if len(self.route_points) == 1:
+            return carla.Location(
+                x=self.route_points[0].x,
+                y=self.route_points[0].y,
+                z=self.route_points[0].z,
+            )
+
+        first_start = self.route_points[0]
+        first_end = self.route_points[1]
+        last_start = self.route_points[-2]
+        last_end = self.route_points[-1]
+
+        first_seg_len = horizontal_distance(first_start, first_end)
+        last_seg_len = horizontal_distance(last_start, last_end)
+
+        if progress_m <= 0.0 and first_seg_len > 1e-9:
+            dx = first_end.x - first_start.x
+            dy = first_end.y - first_start.y
+            forward = carla.Vector3D(dx / first_seg_len, dy / first_seg_len, 0.0)
+            right = carla.Vector3D(-forward.y, forward.x, 0.0)
+            return carla.Location(
+                x=first_start.x + progress_m * forward.x + lateral_offset_m * right.x,
+                y=first_start.y + progress_m * forward.y + lateral_offset_m * right.y,
+                z=first_start.z,
+            )
+
+        if progress_m >= self.route_total_length_m and last_seg_len > 1e-9:
+            extra_progress = progress_m - self.route_total_length_m
+            dx = last_end.x - last_start.x
+            dy = last_end.y - last_start.y
+            dz = last_end.z - last_start.z
+            forward = carla.Vector3D(dx / last_seg_len, dy / last_seg_len, 0.0)
+            right = carla.Vector3D(-forward.y, forward.x, 0.0)
+            z_forward = dz / last_seg_len
+            return carla.Location(
+                x=last_end.x + extra_progress * forward.x + lateral_offset_m * right.x,
+                y=last_end.y + extra_progress * forward.y + lateral_offset_m * right.y,
+                z=last_end.z + extra_progress * z_forward,
+            )
+
+        target_progress = progress_m
+        cumulative = 0.0
+
+        for idx in range(1, len(self.route_points)):
+            start = self.route_points[idx - 1]
+            end = self.route_points[idx]
+            seg_len = horizontal_distance(start, end)
+
+            if seg_len <= 1e-9:
+                continue
+
+            if target_progress <= cumulative + seg_len or idx == len(self.route_points) - 1:
+                ratio = clamp((target_progress - cumulative) / seg_len, 0.0, 1.0)
+                dx = end.x - start.x
+                dy = end.y - start.y
+                forward = carla.Vector3D(dx / seg_len, dy / seg_len, 0.0)
+                right = carla.Vector3D(-forward.y, forward.x, 0.0)
+                return carla.Location(
+                    x=start.x + ratio * dx + lateral_offset_m * right.x,
+                    y=start.y + ratio * dy + lateral_offset_m * right.y,
+                    z=start.z + ratio * (end.z - start.z),
+                )
+
+            cumulative += seg_len
+
+        end = self.route_points[-1]
+        return carla.Location(x=end.x, y=end.y, z=end.z)
 
 
 class RedLightViolationTracker:
@@ -188,6 +417,23 @@ class RedLightViolationTracker:
         )
         return dot2d(rel, self.ref_forward), dot2d(rel, self.ref_right)
 
+    def _get_light_stop_waypoints(self, light):
+        # CARLA Python APIs differ by version. Prefer explicit stop-line waypoints,
+        # then fall back to affected lane waypoints if available.
+        if hasattr(light, "get_stop_waypoints"):
+            try:
+                return list(light.get_stop_waypoints())
+            except (RuntimeError, TypeError, AttributeError):
+                pass
+
+        if hasattr(light, "get_affected_lane_waypoints"):
+            try:
+                return list(light.get_affected_lane_waypoints())
+            except (RuntimeError, TypeError, AttributeError):
+                pass
+
+        return []
+
     def _find_candidate(self, ego_progress):
         best = None
         best_gap = None
@@ -196,9 +442,8 @@ class RedLightViolationTracker:
             if light.state != carla.TrafficLightState.Red:
                 continue
 
-            try:
-                stop_waypoints = light.get_stop_waypoints()
-            except RuntimeError:
+            stop_waypoints = self._get_light_stop_waypoints(light)
+            if not stop_waypoints:
                 continue
 
             for stop_wp in stop_waypoints:

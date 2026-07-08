@@ -150,6 +150,15 @@ def route_length_from_xml(cfg):
 
 
 def estimate_route_completion(cfg, frames):
+    route_length = route_length_from_xml(cfg)
+    logged_progress = [
+        float(record.get("max_route_progress_m"))
+        for record in frames
+        if record.get("max_route_progress_m") is not None
+    ]
+    if route_length is not None and route_length > 0.0 and logged_progress:
+        return max(0.0, min(1.0, max(logged_progress) / route_length))
+
     logged_completion = [
         float(record.get("route_completion"))
         for record in frames
@@ -158,7 +167,6 @@ def estimate_route_completion(cfg, frames):
     if logged_completion:
         return max(logged_completion)
 
-    route_length = route_length_from_xml(cfg)
     travelled_distance = cumulative_travel_distance(frames)
 
     if route_length is None or route_length <= 0.0:
@@ -259,7 +267,11 @@ def build_report(cfg, frames, events):
 
     task_success = find_event(events, "task_success")
     task_failure = find_event(events, "task_failure")
-    success = bool(task_success and task_success.get("success", False))
+    success = bool(
+        task_success
+        and task_success.get("success", False)
+        and task_failure is None
+    )
 
     collision_count = count_activations(frames, "collision")
     lane_invasion_count = count_activations(frames, "lane_invasion")

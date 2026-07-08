@@ -1,0 +1,9 @@
+<routes>
+  <route id="0" town="Town03">
+    <weather cloudiness="100" precipitation="80" sun_altitude_angle="-20" />
+    <waypoint x="-36.631" y="-194.924" z="0.5" />
+    <waypoint x="-27.551" y="-194.695" z="0.5" />
+    <waypoint x="-18.681" y="-194.472" z="0.5" />
+    <waypoint x="-9.811" y="-194.250" z="0.5" />
+  </route>
+</routes>

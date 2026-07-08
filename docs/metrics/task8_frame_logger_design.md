@@ -9,8 +9,10 @@ CARLA world、ego vehicle、sensor 状态、agent control 输出、instruction /
 ## 输出
 ```text
 logs/{scenario_id}/frames.jsonl
-logs/{scenario_id}/frames.csv
 ```
+
+当前仓库默认输出只有 `frames.jsonl`。  
+如需 `frames.csv`，可基于 [carla_eval/metrics/logger.py](/data/hdt_workspace/dongfeng/carla_eval/metrics/logger.py:17) 中的 `write_csv()` 做离线导出，但当前 runner 默认不直接写出 `frames.csv`。
 
 ## 核心接口
 ```python
