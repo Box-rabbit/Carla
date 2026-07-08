@@ -3,6 +3,10 @@ __pycache__/
 .DS_Store
 .pytest_cache/
 .mypy_cache/
+.vscode/
+.idea/
+.codex/
+.agents/
 
 logs/
 dongfeng_code.tar.gz
