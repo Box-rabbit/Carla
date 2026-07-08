@@ -6,6 +6,11 @@ from pathlib import Path
 import carla
 import yaml
 
+try:
+    from carla_eval.runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+except ModuleNotFoundError:
+    from runtime_metrics import LaneInvasionTracker, RedLightViolationTracker, RouteTracker
+
 
 def clip(x, low, high):
     return max(low, min(high, x))
@@ -292,6 +297,7 @@ def main():
     ego = None
     npc = None
     collision_sensor = None
+    lane_invasion_tracker = None
 
     collision_info = {
         "value": False,
@@ -345,10 +351,26 @@ def main():
             collision_info["other_actor"] = event.other_actor.type_id
 
         collision_sensor.listen(on_collision)
+        lane_invasion_tracker = LaneInvasionTracker(world, bp_lib, ego)
 
         ref_loc = carla.Location(x=spawn.location.x, y=spawn.location.y, z=spawn.location.z)
         ref_forward = spawn.get_forward_vector()
         ref_right = spawn.get_right_vector()
+        route_tracker = RouteTracker(
+            carla_map=carla_map,
+            ref_loc=ref_loc,
+            ref_forward=ref_forward,
+            ref_right=ref_right,
+            route_length_m=100.0,
+            corridor_half_width_m=5.5,
+        )
+        red_light_tracker = RedLightViolationTracker(
+            world,
+            ref_loc,
+            ref_forward,
+            ref_right,
+            lane_tolerance_m=5.5,
+        )
 
         max_frames = int(args.duration / 0.05)
 
@@ -533,6 +555,10 @@ def main():
                 if first_detection_time is not None and emergency_brake_started_time is not None:
                     response_time_s = emergency_brake_started_time - first_detection_time
 
+                lane_invasion_metrics = lane_invasion_tracker.snapshot()
+                route_metrics = route_tracker.measure(ego_loc)
+                red_light_metrics = red_light_tracker.update(ego_loc, ego_speed_kmh)
+
                 record = {
                     "timestamp": timestamp,
                     "frame": frame,
@@ -558,9 +584,19 @@ def main():
 
                     "collision": collision_info["value"],
                     "collision_other_actor": collision_info["other_actor"],
-                    "lane_invasion": False,
-                    "red_light_violation": False,
-                    "route_deviation": False,
+                    "lane_invasion": lane_invasion_metrics["lane_invasion"],
+                    "crossed_lane_markings": lane_invasion_metrics["crossed_lane_markings"],
+                    "red_light_violation": red_light_metrics["red_light_violation"],
+                    "active_traffic_light_id": red_light_metrics["active_traffic_light_id"],
+                    "active_traffic_light_state": red_light_metrics["active_traffic_light_state"],
+                    "active_stop_line_progress_m": red_light_metrics["active_stop_line_progress_m"],
+                    "route_deviation": route_metrics["route_deviation"],
+                    "route_progress_m": route_metrics["route_progress_m"],
+                    "max_route_progress_m": route_metrics["max_route_progress_m"],
+                    "route_total_length_m": route_metrics["route_total_length_m"],
+                    "route_completion": route_metrics["route_completion"],
+                    "lateral_offset_from_route_m": route_metrics["lateral_offset_from_route_m"],
+                    "on_driving_lane": route_metrics["on_driving_lane"],
 
                     "front_vehicle_detected": front_detected,
                     "front_vehicle_gap": front_gap,
@@ -619,6 +655,8 @@ def main():
         print(f"[DONE] frames saved to {log_path}")
 
     finally:
+        if lane_invasion_tracker is not None:
+            lane_invasion_tracker.destroy()
         if collision_sensor is not None:
             collision_sensor.destroy()
 

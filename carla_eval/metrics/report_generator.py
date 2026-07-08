@@ -1,6 +1,8 @@
 import argparse
 import csv
 import json
+import math
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import yaml
@@ -8,7 +10,9 @@ import yaml
 
 def load_yaml(path):
     with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    cfg["__config_path__"] = str(Path(path).resolve())
+    return cfg
 
 
 def load_frames(path):
@@ -26,67 +30,292 @@ def load_events(path):
 
 
 def count_true(frames, key):
-    return sum(1 for r in frames if r.get(key))
+    return sum(1 for record in frames if record.get(key))
+
+
+def count_activations(frames, key):
+    count = 0
+    previous = False
+    for record in frames:
+        current = bool(record.get(key))
+        if current and not previous:
+            count += 1
+        previous = current
+    return count
 
 
 def find_event(events, name):
-    for e in events:
-        if e.get("event") == name:
-            return e
+    for event in events:
+        if event.get("event") == name:
+            return event
     return None
 
 
+def find_all_events(events, name):
+    return [event for event in events if event.get("event") == name]
+
+
 def mean(values):
-    values = [v for v in values if v is not None]
+    values = [value for value in values if value is not None]
     if not values:
         return None
     return sum(values) / len(values)
 
 
+def euclidean_distance(a, b):
+    dx = float(a[0]) - float(b[0])
+    dy = float(a[1]) - float(b[1])
+    dz = float(a[2]) - float(b[2])
+    return math.sqrt(dx * dx + dy * dy + dz * dz)
+
+
+def cumulative_travel_distance(frames):
+    if len(frames) < 2:
+        return 0.0
+
+    total = 0.0
+    last = (
+        float(frames[0].get("ego_x", 0.0)),
+        float(frames[0].get("ego_y", 0.0)),
+        float(frames[0].get("ego_z", 0.0)),
+    )
+
+    for record in frames[1:]:
+        current = (
+            float(record.get("ego_x", 0.0)),
+            float(record.get("ego_y", 0.0)),
+            float(record.get("ego_z", 0.0)),
+        )
+        total += euclidean_distance(current, last)
+        last = current
+
+    return total
+
+
+def resolve_repo_relative_path(cfg, relative_path):
+    if not relative_path:
+        return None
+
+    path = Path(relative_path)
+    if path.is_absolute() and path.exists():
+        return path
+
+    if path.exists():
+        return path.resolve()
+
+    config_path = cfg.get("__config_path__")
+    if config_path:
+        repo_root = Path(config_path).resolve().parents[3]
+        candidate = repo_root / relative_path
+        if candidate.exists():
+            return candidate
+
+    return None
+
+
+def route_length_from_xml(cfg):
+    route_cfg = cfg.get("route", {})
+    route_path = resolve_repo_relative_path(cfg, route_cfg.get("route_file"))
+    if route_path is None or not route_path.exists():
+        return None
+
+    route_id = str(route_cfg.get("route_id", 0))
+
+    try:
+        root = ET.parse(route_path).getroot()
+    except ET.ParseError:
+        return None
+
+    for route in root.findall("route"):
+        if route.get("id") != route_id:
+            continue
+
+        points = []
+        for waypoint in route.findall("waypoint"):
+            points.append((
+                float(waypoint.get("x", 0.0)),
+                float(waypoint.get("y", 0.0)),
+                float(waypoint.get("z", 0.0)),
+            ))
+
+        if len(points) < 2:
+            return 0.0
+
+        return sum(
+            euclidean_distance(points[idx], points[idx - 1])
+            for idx in range(1, len(points))
+        )
+
+    return None
+
+
+def estimate_route_completion(cfg, frames):
+    logged_completion = [
+        float(record.get("route_completion"))
+        for record in frames
+        if record.get("route_completion") is not None
+    ]
+    if logged_completion:
+        return max(logged_completion)
+
+    route_length = route_length_from_xml(cfg)
+    travelled_distance = cumulative_travel_distance(frames)
+
+    if route_length is None or route_length <= 0.0:
+        return None
+
+    return max(0.0, min(1.0, travelled_distance / route_length))
+
+
+def first_instruction_trigger_time(cfg, frames):
+    instructions = cfg.get("instructions", [])
+    trigger_times = []
+
+    for instruction in instructions:
+        trigger = instruction.get("trigger", {})
+        if trigger.get("type") == "time" and trigger.get("value") is not None:
+            trigger_times.append(float(trigger["value"]))
+
+    if trigger_times:
+        return min(trigger_times)
+
+    for record in frames:
+        if record.get("instruction_id") is not None:
+            return float(record.get("timestamp", 0.0))
+
+    return None
+
+
+def infer_response_latency_ms(cfg, events, frames):
+    trigger_time = first_instruction_trigger_time(cfg, frames)
+    response_times_s = []
+
+    lane_cfg = cfg.get("success_criteria", {}).get("lane_change", {})
+    if lane_cfg.get("enabled", False):
+        lane_started = find_event(events, "lane_change_started")
+        if lane_started is not None and trigger_time is not None:
+            response_times_s.append(max(0.0, float(lane_started.get("timestamp", 0.0)) - trigger_time))
+
+    speed_cfg = cfg.get("success_criteria", {}).get("target_speed", {})
+    if speed_cfg.get("enabled", False):
+        speed_event = find_event(events, "speed_target_reached")
+        if speed_event is not None and trigger_time is not None:
+            response_times_s.append(max(0.0, float(speed_event.get("timestamp", 0.0)) - trigger_time))
+
+    for name in ("slowdown_started", "detour_started", "emergency_brake_started"):
+        event = find_event(events, name)
+        if event is None:
+            continue
+        if event.get("response_time_s") is not None:
+            response_times_s.append(float(event.get("response_time_s")))
+        elif trigger_time is not None:
+            response_times_s.append(max(0.0, float(event.get("timestamp", 0.0)) - trigger_time))
+
+    response_ms = [value * 1000.0 for value in response_times_s]
+    return mean(response_ms)
+
+
+def infer_subtask_metrics(cfg, events):
+    expected = []
+    for instruction in cfg.get("instructions", []):
+        expected.extend(instruction.get("expected_subtasks", []))
+
+    if not expected:
+        return 0.0, 1.0
+
+    event_names = {event.get("event") for event in events}
+    mapping = {
+        "keep_lane": {"task_success"},
+        "reach_target_speed": {"speed_target_reached"},
+        "target_speed_control": {"speed_target_reached"},
+        "lane_change": {"lane_change_completed"},
+        "change_lane_left": {"lane_change_completed"},
+        "change_lane_right": {"lane_change_completed"},
+        "avoid_pedestrian": {"safe_slowdown_completed"},
+        "slow_down": {"safe_slowdown_completed", "safe_speed_reached"},
+        "detour_and_return": {"return_to_lane_completed"},
+        "return_to_original_lane": {"return_to_lane_completed"},
+        "emergency_brake": {"safe_brake_completed"},
+        "safe_speed_control": {"safe_speed_reached"},
+        "turn": {"turn_completed"},
+        "stop": {"stop_completed"},
+    }
+
+    completed = 0
+    for subtask in expected:
+        expected_events = mapping.get(subtask, {subtask})
+        if any(name in event_names for name in expected_events):
+            completed += 1
+
+    total = len(expected)
+    missing = total - completed
+    return missing / total, completed / total
+
+
 def build_report(cfg, frames, events):
     scenario_id = cfg.get("scenario_id")
     category = cfg.get("category")
+    log_scenario_id = frames[0].get("scenario_id") if frames else scenario_id
 
     task_success = find_event(events, "task_success")
     task_failure = find_event(events, "task_failure")
-
     success = bool(task_success and task_success.get("success", False))
+
+    collision_count = count_activations(frames, "collision")
+    lane_invasion_count = count_activations(frames, "lane_invasion")
+    red_light_violation_count = count_activations(frames, "red_light_violation")
+    route_deviation_count = count_activations(frames, "route_deviation")
+    violation_count = lane_invasion_count + red_light_violation_count + route_deviation_count
+    route_completion = estimate_route_completion(cfg, frames)
+    mean_response_latency_ms = infer_response_latency_ms(cfg, events, frames)
+    subtask_missing_rate, action_success_rate = infer_subtask_metrics(cfg, events)
 
     report = {
         "scenario_id": scenario_id,
+        "log_scenario_id": log_scenario_id,
         "category": category,
         "success": success,
         "task_completion_rate": 1.0 if success else 0.0,
-        "collision_count": count_true(frames, "collision"),
-        "lane_invasion_count": count_true(frames, "lane_invasion"),
-        "red_light_violation_count": count_true(frames, "red_light_violation"),
-        "route_deviation_count": count_true(frames, "route_deviation"),
+        "collision_count": collision_count,
+        "lane_invasion_count": lane_invasion_count,
+        "red_light_violation_count": red_light_violation_count,
+        "route_deviation_count": route_deviation_count,
+        "violation_count": violation_count,
+        "route_completion": route_completion,
         "target_speed_error_kmh": None,
-        "mean_end_to_end_latency_ms": mean(
-            [r.get("end_to_end_latency_ms") for r in frames]
-        ),
+        "target_speed_error": None,
+        "mean_response_latency_ms": mean_response_latency_ms,
+        "response_latency_ms": mean_response_latency_ms,
+        "mean_end_to_end_latency_ms": mean([record.get("end_to_end_latency_ms") for record in frames]),
+        "mean_asr_latency_ms": mean([record.get("asr_latency_ms") for record in frames]),
+        "mean_parser_latency_ms": mean([record.get("parser_latency_ms") for record in frames]),
+        "mean_model_latency_ms": mean([record.get("model_latency_ms") for record in frames]),
+        "subtask_missing_rate": subtask_missing_rate,
+        "action_success_rate": action_success_rate,
         "failure_reason": task_failure.get("failure_reason") if task_failure else None,
     }
 
-    # S01: speed target
-    speed_event = find_event(events, "speed_target_reached")
-    if speed_event is not None:
-        target_speed = speed_event.get("target_speed_kmh")
-        actual_speed = speed_event.get("actual_speed_kmh")
-        if target_speed is not None and actual_speed is not None:
-            report["target_speed_error_kmh"] = abs(float(actual_speed) - float(target_speed))
+    speed_cfg = cfg.get("success_criteria", {}).get("target_speed", {})
+    if speed_cfg.get("enabled", False):
+        speed_event = find_event(events, "speed_target_reached")
+        if speed_event is not None:
+            target_speed = speed_event.get("target_speed_kmh")
+            actual_speed = speed_event.get("actual_speed_kmh")
+            if target_speed is not None and actual_speed is not None:
+                report["target_speed_error_kmh"] = abs(float(actual_speed) - float(target_speed))
+                report["target_speed_error"] = report["target_speed_error_kmh"]
 
-        report.update({
-            "speed_target_reached": True,
-            "target_speed_kmh": target_speed,
-            "actual_speed_kmh": actual_speed,
-            "speed_required_hold_seconds": speed_event.get("required_hold_seconds"),
-        })
+            report.update({
+                "speed_target_reached": True,
+                "target_speed_kmh": target_speed,
+                "actual_speed_kmh": actual_speed,
+                "speed_required_hold_seconds": speed_event.get("required_hold_seconds"),
+            })
 
-    # S02: lane change
-    lane_started = find_event(events, "lane_change_started")
-    lane_completed = find_event(events, "lane_change_completed")
-    if lane_started is not None or lane_completed is not None:
+    lane_cfg = cfg.get("success_criteria", {}).get("lane_change", {})
+    if lane_cfg.get("enabled", False):
+        lane_started = find_event(events, "lane_change_started")
+        lane_completed = find_event(events, "lane_change_completed")
         report.update({
             "lane_change_success": lane_completed is not None and success,
             "lane_change_started_time_s": lane_started.get("timestamp") if lane_started else None,
@@ -102,21 +331,31 @@ def build_report(cfg, frames, events):
             "current_lane_id": lane_completed.get("current_lane_id") if lane_completed else None,
         })
 
-    # S04: pedestrian slowdown
-    ped_detected = find_event(events, "pedestrian_detected")
-    slowdown_started = find_event(events, "slowdown_started")
-    safe_slowdown = find_event(events, "safe_slowdown_completed")
+    ped_cfg = cfg.get("success_criteria", {}).get("pedestrian_slowdown", {})
+    if ped_cfg.get("enabled", False):
+        ped_detected = find_event(events, "pedestrian_detected")
+        slowdown_started = find_event(events, "slowdown_started")
+        safe_slowdown = find_event(events, "safe_slowdown_completed")
 
-    if ped_detected is not None or slowdown_started is not None or safe_slowdown is not None:
-        speeds = [float(r.get("ego_speed_kmh", 0.0)) for r in frames]
+        speeds = [float(record.get("ego_speed_kmh", 0.0)) for record in frames]
         distances = [
-            float(r.get("distance_to_pedestrian"))
-            for r in frames
-            if r.get("distance_to_pedestrian") is not None
+            float(record.get("distance_to_pedestrian"))
+            for record in frames
+            if record.get("distance_to_pedestrian") is not None
         ]
 
         max_speed = max(speeds) if speeds else None
         min_speed = min(speeds) if speeds else None
+        speed_drop = None
+        if (
+            safe_slowdown is not None
+            and safe_slowdown.get("max_speed_before_slowdown") is not None
+            and safe_slowdown.get("ego_speed_kmh") is not None
+        ):
+            speed_drop = (
+                float(safe_slowdown.get("max_speed_before_slowdown"))
+                - float(safe_slowdown.get("ego_speed_kmh"))
+            )
 
         report.update({
             "pedestrian_detected": ped_detected is not None,
@@ -144,32 +383,26 @@ def build_report(cfg, frames, events):
                 safe_slowdown.get("max_speed_before_slowdown") if safe_slowdown else max_speed
             ),
             "min_speed_kmh": safe_slowdown.get("min_speed") if safe_slowdown else min_speed,
-            "speed_drop_kmh": (
-                (safe_slowdown.get("max_speed_before_slowdown") - safe_slowdown.get("ego_speed_kmh"))
-                if safe_slowdown
-                and safe_slowdown.get("max_speed_before_slowdown") is not None
-                and safe_slowdown.get("ego_speed_kmh") is not None
-                else None
-            ),
+            "speed_drop_kmh": speed_drop,
+            "speed_drop": speed_drop,
         })
 
+    cone_cfg = cfg.get("success_criteria", {}).get("cone_detour", {})
+    if cone_cfg.get("enabled", False):
+        cone_detected = find_event(events, "cone_detected")
+        detour_started = find_event(events, "detour_started")
+        detour_completed = find_event(events, "detour_completed")
+        return_completed = find_event(events, "return_to_lane_completed")
 
-    # S05: cone detour
-    cone_detected = find_event(events, "cone_detected")
-    detour_started = find_event(events, "detour_started")
-    detour_completed = find_event(events, "detour_completed")
-    return_completed = find_event(events, "return_to_lane_completed")
-
-    if cone_detected is not None or detour_started is not None or detour_completed is not None or return_completed is not None:
         distances = [
-            float(r.get("distance_to_cone"))
-            for r in frames
-            if r.get("distance_to_cone") is not None
+            float(record.get("distance_to_cone"))
+            for record in frames
+            if record.get("distance_to_cone") is not None
         ]
         lateral_offsets = [
-            abs(float(r.get("lateral_offset_from_lane_center")))
-            for r in frames
-            if r.get("lateral_offset_from_lane_center") is not None
+            abs(float(record.get("lateral_offset_from_lane_center")))
+            for record in frames
+            if record.get("lateral_offset_from_lane_center") is not None
         ]
 
         report.update({
@@ -205,54 +438,49 @@ def build_report(cfg, frames, events):
             "detection_trigger_mode": "front-cone-detection",
         })
 
+    cut_cfg = cfg.get("success_criteria", {}).get("cut_in_brake", {})
+    if cut_cfg.get("enabled", False):
+        cut_in_detected = find_event(events, "cut_in_detected")
+        emergency_brake = find_event(events, "emergency_brake_started")
+        safe_brake = find_event(events, "safe_brake_completed")
 
-
-    # S07: cut-in brake emergency response
-    cut_in_detected = find_event(events, "cut_in_detected")
-    emergency_brake = find_event(events, "emergency_brake_started")
-    safe_brake = find_event(events, "safe_brake_completed")
-
-    if cut_in_detected is not None or emergency_brake is not None or safe_brake is not None:
         distances = [
-            float(r.get("front_vehicle_distance"))
-            for r in frames
-            if r.get("front_vehicle_distance") is not None
+            float(record.get("front_vehicle_distance"))
+            for record in frames
+            if record.get("front_vehicle_distance") is not None
         ]
         gaps = [
-            float(r.get("front_vehicle_gap"))
-            for r in frames
-            if r.get("front_vehicle_gap") is not None
+            float(record.get("front_vehicle_gap"))
+            for record in frames
+            if record.get("front_vehicle_gap") is not None
         ]
         ttcs = [
-            float(r.get("ttc_s"))
-            for r in frames
-            if r.get("ttc_s") is not None
+            float(record.get("ttc_s"))
+            for record in frames
+            if record.get("ttc_s") is not None
         ]
-        brakes = [
-            float(r.get("brake", 0.0))
-            for r in frames
-        ]
+        brakes = [float(record.get("brake", 0.0)) for record in frames]
 
         report.update({
             "cut_in_detected": cut_in_detected is not None,
             "cut_in_detected_time_s": cut_in_detected.get("timestamp") if cut_in_detected else None,
-
             "emergency_brake_started": emergency_brake is not None,
             "emergency_brake_started_time_s": emergency_brake.get("timestamp") if emergency_brake else None,
             "emergency_response_time_s": emergency_brake.get("response_time_s") if emergency_brake else None,
             "emergency_response_latency_ms": (
-                emergency_brake.get("response_time_s") * 1000
+                float(emergency_brake.get("response_time_s")) * 1000.0
                 if emergency_brake and emergency_brake.get("response_time_s") is not None
                 else None
             ),
-
             "safe_brake_completed": safe_brake is not None,
             "safe_brake_completed_time_s": safe_brake.get("timestamp") if safe_brake else None,
-
             "brake_reaction_success": emergency_brake is not None and safe_brake is not None and success,
             "safe_follow_success": safe_brake is not None and success,
-
             "min_front_vehicle_distance": (
+                safe_brake.get("min_front_vehicle_distance")
+                if safe_brake else (min(distances) if distances else None)
+            ),
+            "min_distance_to_front_vehicle": (
                 safe_brake.get("min_front_vehicle_distance")
                 if safe_brake else (min(distances) if distances else None)
             ),
@@ -268,96 +496,85 @@ def build_report(cfg, frames, events):
                 safe_brake.get("max_brake")
                 if safe_brake else (max(brakes) if brakes else None)
             ),
-
             "safe_follow_distance_m": safe_brake.get("safe_follow_distance_m") if safe_brake else None,
             "safe_speed_kmh": safe_brake.get("safe_speed_kmh") if safe_brake else None,
             "safe_follow_hold_time_s": safe_brake.get("safe_follow_hold_time") if safe_brake else None,
             "required_safe_follow_seconds": safe_brake.get("required_safe_follow_seconds") if safe_brake else None,
-
             "emergency_trigger_mode": "front-vehicle-distance-or-ttc",
         })
 
+    rain_cfg = cfg.get("success_criteria", {}).get("rain_night_slowdown", {})
+    if rain_cfg.get("enabled", False):
+        danger_detected = find_event(events, "danger_detected")
+        slowdown_started = find_event(events, "slowdown_started")
+        safe_speed = find_event(events, "safe_speed_reached")
 
-
-    # S08: rain-night danger slowdown
-    danger_detected = find_event(events, "danger_detected")
-    rain_slowdown = find_event(events, "slowdown_started")
-    safe_speed = find_event(events, "safe_speed_reached")
-
-    if danger_detected is not None or rain_slowdown is not None or safe_speed is not None:
-        speeds = [
-            float(r.get("ego_speed_kmh", 0.0))
-            for r in frames
-        ]
-        hazards = [
-            float(r.get("hazard_score", 0.0))
-            for r in frames
-        ]
+        speeds = [float(record.get("ego_speed_kmh", 0.0)) for record in frames]
+        hazards = [float(record.get("hazard_score", 0.0)) for record in frames]
 
         report.update({
             "rain_night_danger_detected": danger_detected is not None,
             "danger_detected_time_s": danger_detected.get("timestamp") if danger_detected else None,
-            "hazard_score": danger_detected.get("hazard_score") if danger_detected else (
-                sum(hazards) / len(hazards) if hazards else None
-            ),
+            "hazard_score": danger_detected.get("hazard_score") if danger_detected else mean(hazards),
             "hazard_score_threshold": danger_detected.get("hazard_score_threshold") if danger_detected else None,
-
             "weather_precipitation": danger_detected.get("weather_precipitation") if danger_detected else None,
             "weather_wetness": danger_detected.get("weather_wetness") if danger_detected else None,
             "weather_fog_density": danger_detected.get("weather_fog_density") if danger_detected else None,
             "is_night": danger_detected.get("is_night") if danger_detected else None,
             "sun_altitude_angle": danger_detected.get("sun_altitude_angle") if danger_detected else None,
-
-            "slowdown_started": rain_slowdown is not None,
-            "slowdown_started_time_s": rain_slowdown.get("timestamp") if rain_slowdown else None,
-            "slowdown_response_time_s": rain_slowdown.get("response_time_s") if rain_slowdown else None,
-
+            "slowdown_started": slowdown_started is not None,
+            "slowdown_started_time_s": slowdown_started.get("timestamp") if slowdown_started else None,
+            "slowdown_response_time_s": slowdown_started.get("response_time_s") if slowdown_started else None,
             "safe_speed_reached": safe_speed is not None,
             "safe_speed_reached_time_s": safe_speed.get("timestamp") if safe_speed else None,
             "target_speed_limit_success": safe_speed is not None and success,
-
             "safe_speed_kmh": safe_speed.get("safe_speed_kmh") if safe_speed else None,
             "ego_speed_at_safe_speed_reached_kmh": safe_speed.get("ego_speed_kmh") if safe_speed else None,
             "safe_speed_hold_time_s": safe_speed.get("safe_speed_hold_time") if safe_speed else None,
+            "safe_speed_hold_time": safe_speed.get("safe_speed_hold_time") if safe_speed else None,
             "required_safe_speed_hold_seconds": safe_speed.get("required_safe_speed_hold_seconds") if safe_speed else None,
-
             "travelled_distance_m": safe_speed.get("travelled_distance_m") if safe_speed else (
                 frames[-1].get("travelled_distance_m") if frames else None
             ),
             "min_travel_distance_m": safe_speed.get("min_travel_distance_m") if safe_speed else None,
-
-            "mean_speed_kmh": safe_speed.get("mean_speed_kmh") if safe_speed else (
-                sum(speeds) / len(speeds) if speeds else None
-            ),
-            "max_speed_kmh": safe_speed.get("max_speed_kmh") if safe_speed else (
-                max(speeds) if speeds else None
-            ),
-            "min_speed_kmh": safe_speed.get("min_speed_kmh") if safe_speed else (
-                min(speeds) if speeds else None
-            ),
-            "mean_hazard_score": safe_speed.get("mean_hazard_score") if safe_speed else (
-                sum(hazards) / len(hazards) if hazards else None
-            ),
-
+            "mean_speed_kmh": safe_speed.get("mean_speed_kmh") if safe_speed else mean(speeds),
+            "mean_speed": safe_speed.get("mean_speed_kmh") if safe_speed else mean(speeds),
+            "max_speed_kmh": safe_speed.get("max_speed_kmh") if safe_speed else (max(speeds) if speeds else None),
+            "min_speed_kmh": safe_speed.get("min_speed_kmh") if safe_speed else (min(speeds) if speeds else None),
+            "mean_hazard_score": safe_speed.get("mean_hazard_score") if safe_speed else mean(hazards),
             "danger_slowdown_success": safe_speed is not None and success,
             "danger_trigger_mode": "weather-hazard-score",
         })
 
-
     return report
 
 
-def save_json(report, output_path):
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(report, f, ensure_ascii=False, indent=2)
+class ReportGenerator:
+    def __init__(self, cfg):
+        self.cfg = cfg
 
+    @classmethod
+    def from_yaml(cls, path):
+        return cls(load_yaml(path))
 
-def save_csv(report, output_path):
-    with open(output_path, "w", encoding="utf-8", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["metric", "value"])
-        for k, v in report.items():
-            writer.writerow([k, v])
+    def generate(self, frames, events):
+        return build_report(self.cfg, frames, events)
+
+    def save(self, report, output_dir):
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        json_path = output_dir / "evaluation_report.json"
+        csv_path = output_dir / "evaluation_report.csv"
+
+        with json_path.open("w", encoding="utf-8") as f:
+            json.dump(report, f, ensure_ascii=False, indent=2)
+
+        with csv_path.open("w", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["metric", "value"])
+            for key, value in report.items():
+                writer.writerow([key, value])
 
 
 def main():
@@ -372,19 +589,12 @@ def main():
     frames = load_frames(args.frames)
     events = load_events(args.events)
 
-    report = build_report(cfg, frames, events)
+    generator = ReportGenerator(cfg)
+    report = generator.generate(frames, events)
+    generator.save(report, args.output_dir)
 
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    json_path = output_dir / "evaluation_report.json"
-    csv_path = output_dir / "evaluation_report.csv"
-
-    save_json(report, json_path)
-    save_csv(report, csv_path)
-
-    print(f"[OK] report saved to {json_path}")
-    print(f"[OK] report saved to {csv_path}")
+    print(f"[OK] report saved to {Path(args.output_dir) / 'evaluation_report.json'}")
+    print(f"[OK] report saved to {Path(args.output_dir) / 'evaluation_report.csv'}")
     print(json.dumps(report, ensure_ascii=False, indent=2))
 
 

@@ -21,7 +21,7 @@ ego:
   vehicle_type: "vehicle.tesla.model3"
   spawn_point: {x: 0.0, y: 0.0, z: 0.3, yaw: 0.0}
 route:
-  route_file: "routes/dongfeng_basic_example.xml"
+  route_file: "routes/basic_control/dongfeng_basic_control_example.xml"
   route_id: 0
 actors:
   vehicles: []
