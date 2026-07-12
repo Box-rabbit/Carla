@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Route for S05_cone_detour in Town03.
+  Cones are placed 28-58 m ahead; route extends ~150 m to allow full detour
+  and lane-return measurement.
+-->
+<routes>
+  <route id="0" town="Town03">
+    <waypoint x="-36.631" y="-194.924" z="0.5" pitch="0.0" yaw="1.44" roll="0.0"/>
+    <waypoint x="-35.869" y="-164.924" z="0.5" pitch="0.0" yaw="1.44" roll="0.0"/>
+    <waypoint x="-35.108" y="-134.924" z="0.5" pitch="0.0" yaw="1.44" roll="0.0"/>
+    <waypoint x="-34.347" y="-104.924" z="0.5" pitch="0.0" yaw="1.44" roll="0.0"/>
+    <waypoint x="-33.586" y="-74.924"  z="0.5" pitch="0.0" yaw="1.44" roll="0.0"/>
+    <waypoint x="-32.825" y="-44.924"  z="0.5" pitch="0.0" yaw="1.44" roll="0.0"/>
+  </route>
+</routes>
