@@ -1,0 +1,10 @@
+scenario_id: S04_pedestrian_slowdown
+trigger:
+  type: route_distance
+  distance_m: 40.0
+  input_mode: wav
+  audio_path: data/audio/S04_pedestrian_slowdown.wav
+expected:
+  intents: [PEDESTRIAN_CAUTION, SLOW_DOWN]
+  target_speed_max_kmh: 25
+  no_collision: true

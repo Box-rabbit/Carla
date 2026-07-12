@@ -1,0 +1,10 @@
+scenario_id: S04_pedestrian_slowdown
+base_scenario_config: configs/scenarios/complex_obstacle/S04_pedestrian_slowdown.yaml
+route:
+  route_file: routes/complex_obstacle/S04_pedestrian_slowdown.xml
+  route_id: 0
+trigger_file: configs/lmdrive/triggers/S04_pedestrian_slowdown.yaml
+voice_backend:
+  name: Voice2LMDrive
+  execution_mode: mock
+  command: null

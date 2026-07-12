@@ -7,6 +7,12 @@ import carla
 import yaml
 
 try:
+    from carla_eval.lmdrive import (
+        LMDriveTriggerRuntime,
+        Voice2LMDriveAdapter,
+        load_yaml_with_path,
+        resolve_config_relative_path,
+    )
     from carla_eval.runtime_metrics import (
         LaneInvasionTracker,
         RedLightViolationTracker,
@@ -18,6 +24,12 @@ try:
         make_transform_from_config,
     )
 except ModuleNotFoundError:
+    from lmdrive import (
+        LMDriveTriggerRuntime,
+        Voice2LMDriveAdapter,
+        load_yaml_with_path,
+        resolve_config_relative_path,
+    )
     from runtime_metrics import (
         LaneInvasionTracker,
         RedLightViolationTracker,
@@ -125,6 +137,11 @@ def main():
     parser.add_argument("--lookahead", type=float, default=None)
     parser.add_argument("--log-id", type=str, default=None)
     parser.add_argument(
+        "--lmdrive-config",
+        type=str,
+        default="configs/lmdrive/scenarios/S04_pedestrian_slowdown.yaml",
+    )
+    parser.add_argument(
         "--config",
         type=str,
         default="configs/scenarios/complex_obstacle/S04_pedestrian_slowdown.yaml",
@@ -136,6 +153,18 @@ def main():
     with config_path.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     cfg["__config_path__"] = str(config_path.resolve())
+
+    lmdrive_cfg = None
+    trigger_cfg = None
+    trigger_runtime = None
+    voice_adapter = None
+    lmdrive_config_path = Path(args.lmdrive_config) if args.lmdrive_config else None
+    if lmdrive_config_path is not None and lmdrive_config_path.exists():
+        lmdrive_cfg = load_yaml_with_path(lmdrive_config_path)
+        trigger_file = resolve_config_relative_path(lmdrive_cfg, lmdrive_cfg.get("trigger_file"))
+        trigger_cfg = load_yaml_with_path(trigger_file)
+        trigger_runtime = LMDriveTriggerRuntime(trigger_cfg)
+        voice_adapter = Voice2LMDriveAdapter(lmdrive_cfg)
 
     scenario_id = cfg.get("scenario_id", config_path.stem)
     category = cfg.get("category", "complex_obstacle")
@@ -295,6 +324,36 @@ def main():
         first_detection_time = None
         slowdown_started_time = None
         success_time = None
+        ped_route_progress = route_tracker.measure(ped_loc)["route_progress_m"]
+
+        instruction_text = (
+            cfg.get("instructions", [{}])[0].get("text_zh")
+            or cfg.get("instructions", [{}])[0].get("text_en")
+            or scenario_id
+        )
+        expected_cfg = (trigger_cfg or {}).get("expected", {})
+        expected_intents = list(expected_cfg.get("intents", []))
+        expected_target_speed_max_kmh = expected_cfg.get("target_speed_max_kmh")
+        expected_no_collision = expected_cfg.get("no_collision")
+
+        voice_trigger_time = None
+        voice_output = {
+            "backend": (lmdrive_cfg or {}).get("voice_backend", {}).get("name", "Voice2LMDrive"),
+            "backend_mode": (lmdrive_cfg or {}).get("voice_backend", {}).get("execution_mode", "disabled"),
+            "status": "not_triggered",
+            "error": None,
+            "recognized_text": None,
+            "recognized_intents": [],
+            "target_speed_max_kmh": None,
+            "no_collision": None,
+            "asr_latency_ms": 0.0,
+            "parser_latency_ms": 0.0,
+            "model_latency_ms": 0.0,
+            "end_to_end_latency_ms": 0.0,
+            "input_mode": (trigger_cfg or {}).get("trigger", {}).get("input_mode"),
+            "audio_path": str(resolve_config_relative_path(trigger_cfg, (trigger_cfg or {}).get("trigger", {}).get("audio_path"))) if trigger_cfg else None,
+        }
+        trigger_payload = None
 
         print(f"[START] Running {log_scenario_id}")
         print(f"[INFO] config = {config_path}")
@@ -306,6 +365,10 @@ def main():
         print(f"[INFO] min_safe_distance = {min_safe_distance} m")
         print(f"[INFO] lookahead = {lookahead} m")
         print(f"[INFO] log_path = {log_path}")
+        if lmdrive_cfg is not None:
+            print(f"[INFO] lmdrive_config = {lmdrive_config_path}")
+            print(f"[INFO] trigger_file = {resolve_config_relative_path(lmdrive_cfg, lmdrive_cfg.get('trigger_file'))}")
+            print(f"[INFO] voice_backend = {voice_output['backend']} ({voice_output['backend_mode']})")
 
         with log_path.open("w", encoding="utf-8") as f:
             for frame in range(max_frames):
@@ -332,12 +395,38 @@ def main():
                     route_metrics_before["route_progress_m"] + lookahead
                 )
 
+                if trigger_runtime is not None:
+                    just_triggered, trigger_payload = trigger_runtime.evaluate(
+                        timestamp=timestamp,
+                        route_progress_m=route_metrics_before["route_progress_m"],
+                        anchor_progress_m=ped_route_progress,
+                    )
+                    if just_triggered and voice_adapter is not None:
+                        voice_trigger_time = timestamp
+                        voice_output = voice_adapter.run(
+                            scenario_id=scenario_id,
+                            trigger_cfg=trigger_cfg,
+                            instruction_text=instruction_text,
+                        )
+                        print(
+                            f"[EVENT] voice_instruction_triggered at t={timestamp:.1f}s, "
+                            f"route_progress={route_metrics_before['route_progress_m']:.1f}m, "
+                            f"route_distance_to_anchor={trigger_payload.get('route_distance_to_anchor_m')}, "
+                            f"intents={voice_output.get('recognized_intents')}"
+                        )
+
                 speed_kmh = get_speed_kmh(ego)
                 steer = compute_steer_to_location(ego, target_loc)
+                effective_target_speed = target_speed
+                if voice_trigger_time is not None and voice_output.get("target_speed_max_kmh") is not None:
+                    effective_target_speed = min(
+                        effective_target_speed,
+                        float(voice_output.get("target_speed_max_kmh")),
+                    )
 
                 throttle, brake = compute_control(
                     speed_kmh,
-                    target_speed,
+                    effective_target_speed,
                     distance_to_pedestrian,
                     slowdown_distance,
                 )
@@ -397,11 +486,20 @@ def main():
                 )
                 spectator.set_transform(carla.Transform(camera_loc, camera_rot))
 
+                instruction_active = timestamp >= trigger_time
+                if trigger_runtime is not None:
+                    instruction_active = voice_trigger_time is not None
+
+                recognized_intents = list(voice_output.get("recognized_intents", []))
+                intent_match = None
+                if voice_trigger_time is not None and expected_intents:
+                    intent_match = set(expected_intents).issubset(set(recognized_intents))
+
                 record = {
                     "timestamp": timestamp,
                     "frame": frame,
                     "scenario_id": log_scenario_id,
-                    "instruction_id": primary_instruction_id if timestamp >= trigger_time else None,
+                    "instruction_id": primary_instruction_id if instruction_active else None,
                     "ego_x": ego_loc.x,
                     "ego_y": ego_loc.y,
                     "ego_z": ego_loc.z,
@@ -435,10 +533,32 @@ def main():
                     "slowdown_hold_time": slowdown_hold_time,
                     "first_detection_time": first_detection_time,
                     "slowdown_started_time": slowdown_started_time,
-                    "asr_latency_ms": 0,
-                    "parser_latency_ms": 0,
-                    "model_latency_ms": 1,
-                    "end_to_end_latency_ms": 1,
+                    "voice_triggered": voice_trigger_time is not None,
+                    "voice_trigger_timestamp": voice_trigger_time,
+                    "voice_backend": voice_output.get("backend"),
+                    "voice_backend_mode": voice_output.get("backend_mode"),
+                    "voice_backend_status": voice_output.get("status"),
+                    "voice_error": voice_output.get("error"),
+                    "trigger_type": trigger_payload.get("trigger_type") if trigger_payload else None,
+                    "trigger_distance_m": trigger_payload.get("trigger_distance_m") if trigger_payload else None,
+                    "route_distance_to_trigger_anchor_m": (
+                        trigger_payload.get("route_distance_to_anchor_m") if trigger_payload else None
+                    ),
+                    "voice_input_mode": voice_output.get("input_mode"),
+                    "voice_audio_path": voice_output.get("audio_path"),
+                    "recognized_text": voice_output.get("recognized_text"),
+                    "recognized_intents": recognized_intents,
+                    "expected_intents": expected_intents,
+                    "intent_match": intent_match,
+                    "voice_target_speed_max_kmh": voice_output.get("target_speed_max_kmh"),
+                    "expected_target_speed_max_kmh": expected_target_speed_max_kmh,
+                    "voice_no_collision": voice_output.get("no_collision"),
+                    "expected_no_collision": expected_no_collision,
+                    "effective_target_speed_kmh": effective_target_speed,
+                    "asr_latency_ms": voice_output.get("asr_latency_ms", 0.0),
+                    "parser_latency_ms": voice_output.get("parser_latency_ms", 0.0),
+                    "model_latency_ms": voice_output.get("model_latency_ms", 0.0),
+                    "end_to_end_latency_ms": voice_output.get("end_to_end_latency_ms", 0.0),
                 }
 
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")

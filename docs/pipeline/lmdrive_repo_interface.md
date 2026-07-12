@@ -17,6 +17,20 @@
 - 语音链路 `ASR -> instruction`
 - 多模态观测到 `LMDrive` 输入张量的适配
 
+当前已经补上的最小接入骨架是：
+
+- `configs/lmdrive/scenarios/S04_pedestrian_slowdown.yaml`
+- `configs/lmdrive/triggers/S04_pedestrian_slowdown.yaml`
+- `carla_eval/lmdrive/Voice2LMDriveAdapter`
+- `carla_eval/lmdrive/LMDriveTriggerRuntime`
+
+它的职责是：
+
+- 沿用现有 route XML 与 CARLA 场景 YAML；
+- 在 route-distance 条件满足时触发一次语音输入；
+- 调用 `Voice2LMDrive` 适配层得到 intents / target speed 上限；
+- 将输出写回当前 `frames.jsonl` 与离线报告。
+
 因此，本文件重点回答三个问题：
 
 1. 当前仓库已经给 `LMDrive` 留了哪些接口；
@@ -66,6 +80,27 @@
 | `trigger` | 决定何时把 instruction 交给模型 | 决定 `instruction_id` 在日志中的激活时刻 |
 | `intent` | 可选，作为结构化提示或监督信号 | 用于状态机、动作判定、指标解释 |
 | `expected_subtasks` | 可选，帮助约束动作链路 | 用于 `subtask_missing_rate` 统计 |
+
+在最小语音接入模式下，另外补一层独立 trigger 配置：
+
+```yaml
+scenario_id: S04_pedestrian_slowdown
+trigger:
+  type: route_distance
+  distance_m: 40.0
+  input_mode: wav
+  audio_path: data/audio/S04_pedestrian_slowdown.wav
+expected:
+  intents: [PEDESTRIAN_CAUTION, SLOW_DOWN]
+  target_speed_max_kmh: 25
+  no_collision: true
+```
+
+这层配置不替代原有 `configs/scenarios/*.yaml`，只负责补充：
+
+- 语音何时触发
+- 语音输入来自哪个 `wav`
+- 对 `Voice2LMDrive` 输出的最小期望
 
 ### 3.2 Agent 调用接口
 

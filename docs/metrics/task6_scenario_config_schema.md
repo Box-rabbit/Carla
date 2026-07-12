@@ -13,6 +13,18 @@
 - 终点主要由 `route.route_file + route_id` 隐式定义；
 - 道路、天气、参与者、触发条件、成功判定均以具体场景 YAML 为唯一真源。
 
+对于 `LMDrive / Voice2LMDrive` 最小接入，建议额外增加一层轻量桥接配置：
+
+- `configs/lmdrive/scenarios/*.yaml`
+- `configs/lmdrive/triggers/*.yaml`
+
+其中 `configs/scenarios/*.yaml` 仍然是 CARLA 场景真源，`configs/lmdrive/*.yaml` 只负责说明：
+
+- 复用哪个场景 YAML
+- 复用哪个 route XML
+- 在什么 trigger 条件下触发语音输入
+- `Voice2LMDrive` 的期望输出是什么
+
 ## 推荐字段
 ```yaml
 scenario_id: "S01_keep_lane_speed_60"
@@ -57,4 +69,19 @@ failure_criteria:
   blocked: true
 metrics:
   required: ["route_completion", "collision_count", "target_speed_error", "response_latency_ms"]
+```
+
+## LMDrive / Voice2LMDrive 触发文件示例
+
+```yaml
+scenario_id: "S04_pedestrian_slowdown"
+trigger:
+  type: "route_distance"
+  distance_m: 40.0
+  input_mode: "wav"
+  audio_path: "data/audio/S04_pedestrian_slowdown.wav"
+expected:
+  intents: ["PEDESTRIAN_CAUTION", "SLOW_DOWN"]
+  target_speed_max_kmh: 25
+  no_collision: true
 ```

@@ -1,7 +1,7 @@
 metric_layers:
   frame_logging:
     output: "logs/{scenario_id}/frames.jsonl"
-    fields: ["timestamp", "frame", "scenario_id", "instruction_id", "ego_x", "ego_y", "ego_z", "ego_speed_kmh", "steer", "throttle", "brake", "collision", "lane_invasion", "red_light_violation", "route_deviation", "distance_to_front_actor", "asr_latency_ms", "parser_latency_ms", "model_latency_ms", "end_to_end_latency_ms"]
+    fields: ["timestamp", "frame", "scenario_id", "instruction_id", "ego_x", "ego_y", "ego_z", "ego_speed_kmh", "steer", "throttle", "brake", "collision", "lane_invasion", "red_light_violation", "route_deviation", "distance_to_front_actor", "voice_triggered", "voice_trigger_timestamp", "voice_backend", "voice_backend_mode", "voice_backend_status", "voice_input_mode", "voice_audio_path", "recognized_text", "recognized_intents", "expected_intents", "intent_match", "voice_target_speed_max_kmh", "expected_target_speed_max_kmh", "voice_no_collision", "expected_no_collision", "asr_latency_ms", "parser_latency_ms", "model_latency_ms", "end_to_end_latency_ms"]
   event_detection:
     output: "logs/{scenario_id}/events.json"
     events: ["instruction_triggered", "speed_target_reached", "lane_change_completed", "turn_completed", "stop_completed", "obstacle_avoided", "emergency_brake_started", "collision_happened", "violation_happened", "task_success", "task_failure"]

@@ -40,9 +40,11 @@ benchmark 映射见：
 ```text
 carla_eval/                  场景运行脚本、运行时检测、离线评测、报告生成
 configs/scenarios/           场景配置唯一真源
+configs/lmdrive/             LMDrive / Voice2LMDrive 最小接入配置
 configs/metrics/             指标输出 schema
 configs/taxonomy/            场景分类与核心指标分类
 routes/                      route XML
+data/audio/                  语音输入 wav
 logs/                        场景运行日志输出
 reports/                     单场景评测报告与汇总表
 docs/scenario_design/        场景设计与 benchmark 映射

@@ -176,6 +176,10 @@ def estimate_route_completion(cfg, frames):
 
 
 def first_instruction_trigger_time(cfg, frames):
+    for record in frames:
+        if record.get("voice_trigger_timestamp") is not None:
+            return float(record.get("voice_trigger_timestamp"))
+
     instructions = cfg.get("instructions", [])
     trigger_times = []
 
@@ -191,6 +195,13 @@ def first_instruction_trigger_time(cfg, frames):
         if record.get("instruction_id") is not None:
             return float(record.get("timestamp", 0.0))
 
+    return None
+
+
+def first_voice_frame(frames):
+    for record in frames:
+        if record.get("voice_triggered"):
+            return record
     return None
 
 
@@ -281,6 +292,8 @@ def build_report(cfg, frames, events):
     route_completion = estimate_route_completion(cfg, frames)
     mean_response_latency_ms = infer_response_latency_ms(cfg, events, frames)
     subtask_missing_rate, action_success_rate = infer_subtask_metrics(cfg, events)
+    voice_frame = first_voice_frame(frames)
+    instruction_event = find_event(events, "instruction_triggered")
 
     report = {
         "scenario_id": scenario_id,
@@ -306,6 +319,35 @@ def build_report(cfg, frames, events):
         "action_success_rate": action_success_rate,
         "failure_reason": task_failure.get("failure_reason") if task_failure else None,
     }
+
+    if voice_frame is not None:
+        report.update({
+            "instruction_triggered": True,
+            "instruction_trigger_time_s": voice_frame.get("voice_trigger_timestamp"),
+            "voice_backend": voice_frame.get("voice_backend"),
+            "voice_backend_mode": voice_frame.get("voice_backend_mode"),
+            "voice_backend_status": voice_frame.get("voice_backend_status"),
+            "voice_error": voice_frame.get("voice_error"),
+            "voice_input_mode": voice_frame.get("voice_input_mode"),
+            "voice_audio_path": voice_frame.get("voice_audio_path"),
+            "recognized_text": voice_frame.get("recognized_text"),
+            "recognized_intents": voice_frame.get("recognized_intents"),
+            "expected_intents": voice_frame.get("expected_intents"),
+            "intent_match": voice_frame.get("intent_match"),
+            "voice_target_speed_max_kmh": voice_frame.get("voice_target_speed_max_kmh"),
+            "expected_target_speed_max_kmh": voice_frame.get("expected_target_speed_max_kmh"),
+            "voice_no_collision": voice_frame.get("voice_no_collision"),
+            "expected_no_collision": voice_frame.get("expected_no_collision"),
+        })
+    else:
+        report.update({
+            "instruction_triggered": instruction_event is not None,
+            "instruction_trigger_time_s": (
+                instruction_event.get("timestamp")
+                if instruction_event is not None
+                else first_instruction_trigger_time(cfg, frames)
+            ),
+        })
 
     speed_cfg = cfg.get("success_criteria", {}).get("target_speed", {})
     if speed_cfg.get("enabled", False):

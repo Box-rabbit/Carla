@@ -62,6 +62,38 @@ def has_collision(frames):
     return any(record.get("collision") for record in frames)
 
 
+def detect_instruction_trigger(frames):
+    record = first_true_frame(frames, "voice_triggered")
+    if record is None:
+        record = next((item for item in frames if item.get("instruction_id") is not None), None)
+
+    if record is None:
+        return []
+
+    return [{
+        "event": "instruction_triggered",
+        "timestamp": record.get("voice_trigger_timestamp", record.get("timestamp", 0.0)),
+        "instruction_id": record.get("instruction_id"),
+        "trigger_type": record.get("trigger_type"),
+        "trigger_distance_m": record.get("trigger_distance_m"),
+        "route_distance_to_trigger_anchor_m": record.get("route_distance_to_trigger_anchor_m"),
+        "voice_backend": record.get("voice_backend"),
+        "voice_backend_mode": record.get("voice_backend_mode"),
+        "voice_backend_status": record.get("voice_backend_status"),
+        "voice_error": record.get("voice_error"),
+        "voice_input_mode": record.get("voice_input_mode"),
+        "voice_audio_path": record.get("voice_audio_path"),
+        "recognized_text": record.get("recognized_text"),
+        "recognized_intents": record.get("recognized_intents"),
+        "expected_intents": record.get("expected_intents"),
+        "intent_match": record.get("intent_match"),
+        "voice_target_speed_max_kmh": record.get("voice_target_speed_max_kmh"),
+        "expected_target_speed_max_kmh": record.get("expected_target_speed_max_kmh"),
+        "voice_no_collision": record.get("voice_no_collision"),
+        "expected_no_collision": record.get("expected_no_collision"),
+    }]
+
+
 def detect_collision(frames):
     events = []
     record = first_true_frame(frames, "collision")
@@ -601,6 +633,7 @@ def detect_task_failure(frames, events, cfg):
 
 def build_events(cfg, frames):
     events = []
+    events.extend(detect_instruction_trigger(frames))
     events.extend(detect_collision(frames))
     events.extend(detect_speed_target(frames, cfg))
     events.extend(detect_lane_change(frames, cfg))
