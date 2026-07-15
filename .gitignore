@@ -9,4 +9,5 @@ __pycache__/
 .agents/
 
 logs/
-dongfeng_code.tar.gz
+results.zip
+*.tar.gz

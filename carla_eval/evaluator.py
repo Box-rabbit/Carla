@@ -29,9 +29,12 @@ from carla_eval.runtime_metrics import (
     get_controller_param,
     get_instruction_trigger_time,
     load_world_for_config,
-    make_transform_from_config,
+    make_lane_aligned_transform_from_config,
+    route_debug_summary,
 )
+from carla_eval.lmdrive.route_audio_runtime import RouteAudioRuntime
 from carla_eval.sensors.observation_builder import ObservationBuilder
+from carla_eval.visualization.voice_overlay import FixedVoiceOverlay
 
 
 def _get_speed_kmh(vehicle: carla.Actor) -> float:
@@ -50,6 +53,103 @@ def _update_spectator(world: carla.World, ego: carla.Actor) -> None:
     )
     world.get_spectator().set_transform(
         carla.Transform(cam_loc, carla.Rotation(pitch=-20.0, yaw=ego_tf.rotation.yaw))
+    )
+
+
+def _draw_route_debug(
+    world: carla.World,
+    route_points,
+    stride: int = 1,
+    life_time: float = 600.0,
+    with_labels: bool = False,
+) -> None:
+    if not route_points:
+        return
+
+    stride = max(1, int(stride))
+    debug = world.debug
+    color_mid = carla.Color(0, 200, 255)
+    color_start = carla.Color(0, 255, 0)
+    color_end = carla.Color(255, 0, 0)
+    color_line = carla.Color(0, 120, 255)
+
+    sampled_indices = list(range(0, len(route_points), stride))
+    if sampled_indices[-1] != len(route_points) - 1:
+        sampled_indices.append(len(route_points) - 1)
+
+    sampled = [route_points[i] for i in sampled_indices]
+
+    for idx, point in enumerate(sampled):
+        color = color_mid
+        size = 0.10
+        if idx == 0:
+            color = color_start
+            size = 0.16
+        elif idx == len(sampled) - 1:
+            color = color_end
+            size = 0.16
+
+        loc = carla.Location(x=point.x, y=point.y, z=point.z + 0.35)
+        debug.draw_point(loc, size=size, color=color, life_time=life_time)
+
+        if with_labels:
+            raw_idx = sampled_indices[idx]
+            debug.draw_string(
+                carla.Location(x=point.x, y=point.y, z=point.z + 0.8),
+                str(raw_idx),
+                draw_shadow=False,
+                color=color,
+                life_time=life_time,
+                persistent_lines=False,
+            )
+
+    for start, end in zip(sampled, sampled[1:]):
+        debug.draw_line(
+            carla.Location(x=start.x, y=start.y, z=start.z + 0.2),
+            carla.Location(x=end.x, y=end.y, z=end.z + 0.2),
+            thickness=0.08,
+            color=color_line,
+            life_time=life_time,
+            persistent_lines=False,
+        )
+
+
+def _traffic_light_state_from_config(state_name: str):
+    states = {
+        "red": carla.TrafficLightState.Red,
+        "yellow": carla.TrafficLightState.Yellow,
+        "green": carla.TrafficLightState.Green,
+        "off": carla.TrafficLightState.Off,
+        "unknown": carla.TrafficLightState.Unknown,
+    }
+    return states.get(str(state_name).strip().lower())
+
+
+def _apply_traffic_conditions(world: carla.World, cfg: Dict[str, Any]) -> None:
+    traffic_cfg = cfg.get("traffic_conditions", {})
+    light_cfg = traffic_cfg.get("traffic_lights", {})
+    mode = str(light_cfg.get("mode", "preserve")).strip().lower()
+    lights = list(world.get_actors().filter("traffic.traffic_light*"))
+
+    if mode in {"", "preserve", "default", "map_default"}:
+        print(f"[TRAFFIC] traffic_lights=preserve map defaults, count={len(lights)}")
+        return
+
+    if mode not in {"freeze_all", "set_all_state"}:
+        print(f"[TRAFFIC] unknown traffic_lights mode={mode}, preserving map defaults")
+        return
+
+    state = _traffic_light_state_from_config(light_cfg.get("state", "red"))
+    freeze = bool(light_cfg.get("freeze", mode == "freeze_all"))
+    for light in lights:
+        if state is not None:
+            light.set_state(state)
+        light.freeze(freeze)
+
+    state_label = str(light_cfg.get("state", "unchanged")) if state is not None else "unchanged"
+    print(
+        "[TRAFFIC] "
+        f"traffic_lights mode={mode}, count={len(lights)}, state={state_label}, freeze={freeze}"
     )
 
 
@@ -75,7 +175,7 @@ class ScenarioEvaluator:
     def __init__(self, scenario, cfg: dict, config_path: Path):
         self.scenario = scenario
         self.cfg = cfg
-        self.config_path = config_path
+        self.config_path = Path(config_path)
 
     def run(
         self,
@@ -85,6 +185,13 @@ class ScenarioEvaluator:
         log_id: Optional[str] = None,
         spawn_index: Optional[int] = None,
         enable_cameras: bool = False,
+        agent=None,
+        draw_route: bool = False,
+        draw_route_stride: int = 1,
+        draw_route_lifetime: float = 600.0,
+        draw_route_labels: bool = False,
+        voice_overlay: bool = False,
+        voice_match_config: str = "configs/lmdrive/route_audio_matches.yaml",
     ) -> Dict[str, Any]:
         """
         Run the scenario and return the final summary dict.
@@ -126,12 +233,15 @@ class ScenarioEvaluator:
         settings.synchronous_mode = True
         settings.fixed_delta_seconds = dt
         world.apply_settings(settings)
+        _apply_traffic_conditions(world, cfg)
 
         # ---------- resource handles ----------
         ego: Optional[carla.Actor] = None
         collision_sensor: Optional[carla.Actor] = None
         lane_invasion_tracker: Optional[LaneInvasionTracker] = None
         obs_builder: Optional[ObservationBuilder] = None
+        voice_runtime: Optional[RouteAudioRuntime] = None
+        voice_window: Optional[FixedVoiceOverlay] = None
         scenario_actors: List[carla.Actor] = []
         background_actors: List[carla.Actor] = []
         collision_info: Dict[str, Any] = {"value": False, "other_actor": None}
@@ -153,7 +263,7 @@ class ScenarioEvaluator:
                 sp = spawn_points[spawn_index % len(spawn_points)]
                 sp.location.z += 0.5
             else:
-                sp = make_transform_from_config(cfg)
+                sp = make_lane_aligned_transform_from_config(carla_map, cfg)
 
             ego = world.try_spawn_actor(vehicle_bp, sp)
             if ego is None:
@@ -166,6 +276,39 @@ class ScenarioEvaluator:
             route_tracker = RouteTracker.from_route_config(
                 carla_map, cfg, corridor_half_width_m=route_corridor_half
             )
+            summary = route_debug_summary(carla_map, route_tracker.route_points)
+            print(
+                "[ROUTE] "
+                f"mode={cfg.get('route', {}).get('mode', 'xml')} "
+                f"points={summary['point_count']} "
+                f"length={summary['total_length_m']}m "
+                f"samples={summary['samples']}"
+            )
+            if draw_route:
+                _draw_route_debug(
+                    world,
+                    route_tracker.route_points,
+                    stride=draw_route_stride,
+                    life_time=draw_route_lifetime,
+                    with_labels=draw_route_labels,
+                )
+
+            if voice_overlay:
+                try:
+                    voice_runtime = RouteAudioRuntime(voice_match_config, scenario_id=scenario_id)
+                    voice_window = FixedVoiceOverlay(
+                        title=f"Voice Input - {scenario_id}",
+                        geometry="1080x320+40+40",
+                    )
+                    print(
+                        "[VOICE_OVERLAY] "
+                        f"loaded {len(voice_runtime.events)} voice trigger(s) from {voice_match_config}"
+                    )
+                except Exception as exc:
+                    print(f"[VOICE_OVERLAY] disabled: {exc}")
+                    voice_runtime = None
+                    voice_window = None
+
             red_light_tracker = RedLightViolationTracker(
                 world,
                 route_tracker.ref_loc,
@@ -224,11 +367,34 @@ class ScenarioEvaluator:
                     ego_loc = ego.get_location()
                     speed_kmh = _get_speed_kmh(ego)
                     route_metrics_pre = route_tracker.measure(ego_loc)
+                    voice_event = None
+                    voice_triggered = False
+                    if voice_runtime is not None:
+                        voice_event, voice_triggered = voice_runtime.update(
+                            route_metrics_pre["route_progress_m"],
+                            timestamp,
+                        )
+                        if voice_triggered:
+                            voice = voice_event.get("voice", {}) if voice_event else {}
+                            print(
+                                "[VOICE_TRIGGER] "
+                                f"t={timestamp:.1f}s "
+                                f"progress={route_metrics_pre['route_progress_m']:.1f}m "
+                                f"audio={voice_event.get('audio_id') if voice_event else None} "
+                                f"event={voice_event.get('event_id') if voice_event else None} "
+                                f"text={voice.get('input_text', '')}"
+                            )
+                    if voice_window is not None:
+                        voice_window.update(
+                            voice_event,
+                            route_metrics_pre["route_progress_m"],
+                        )
 
                     obs: Dict[str, Any] = {
                         "ego_loc": ego_loc,
                         "speed_kmh": speed_kmh,
                         "route_metrics": route_metrics_pre,
+                        "route_tracker": route_tracker,
                         "timestamp": timestamp,
                     }
                     if obs_builder is not None:
@@ -238,9 +404,23 @@ class ScenarioEvaluator:
                     state = self.scenario.update_state(
                         ego, scenario_actors, state, obs, dt, cfg
                     )
-                    throttle, brake, steer = self.scenario.compute_control(
-                        ego, scenario_actors, state, obs, cfg
-                    )
+                    if agent is not None:
+                        throttle, brake, steer = agent.run_step(
+                            {
+                                "scenario": self.scenario,
+                                "ego": ego,
+                                "actors": scenario_actors,
+                                "state": state,
+                                "obs": obs,
+                                "cfg": cfg,
+                            },
+                            timestamp,
+                            instruction=cfg.get("instructions", [{}])[0],
+                        )
+                    else:
+                        throttle, brake, steer = self.scenario.compute_control(
+                            ego, scenario_actors, state, obs, cfg
+                        )
 
                     control = carla.VehicleControl(
                         throttle=float(throttle),
@@ -295,6 +475,27 @@ class ScenarioEvaluator:
                         "model_latency_ms": 0.0,
                         "end_to_end_latency_ms": 0.0,
                     }
+                    if voice_event is not None:
+                        voice = voice_event.get("voice", {})
+                        record.update({
+                            "voice_audio_id": voice_event.get("audio_id"),
+                            "voice_event_id": voice_event.get("event_id"),
+                            "voice_text": voice.get("input_text") or voice.get("normalized_text"),
+                            "voice_intents": voice.get("recognized_intents"),
+                            "voice_triggered": voice_triggered,
+                            "voice_trigger_progress_m": voice_event.get("voice_trigger_progress_m"),
+                            "voice_trigger_timestamp": voice_event.get("voice_trigger_timestamp"),
+                        })
+                    else:
+                        record.update({
+                            "voice_audio_id": None,
+                            "voice_event_id": None,
+                            "voice_text": None,
+                            "voice_intents": None,
+                            "voice_triggered": False,
+                            "voice_trigger_progress_m": None,
+                            "voice_trigger_timestamp": None,
+                        })
                     # scenario-specific fields
                     record.update(
                         self.scenario.extra_record(ego, scenario_actors, state, obs, cfg)
@@ -332,8 +533,15 @@ class ScenarioEvaluator:
             }
 
         finally:
+            if agent is not None:
+                try:
+                    agent.destroy()
+                except Exception:
+                    pass
             if obs_builder is not None:
                 obs_builder.destroy()
+            if voice_window is not None:
+                voice_window.destroy()
             if lane_invasion_tracker is not None:
                 lane_invasion_tracker.destroy()
             _cleanup([collision_sensor] + scenario_actors + background_actors + [ego])

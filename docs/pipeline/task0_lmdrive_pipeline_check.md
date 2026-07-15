@@ -16,7 +16,7 @@ LMDrive 官方评测流程仍然是本项目的重要参考，但当前仓库的
 |---|---|---|
 | CARLA | `0.9.10.1` | `0.9.10.1` |
 | 场景入口 | `leaderboard/` | `carla_eval/run_carla_*.py` |
-| 场景定义 | 官方 route / scenario 文件 | `configs/scenarios/*.yaml` + `routes/*.xml` |
+| 场景定义 | 官方 route / scenario 文件 | `configs/scenarios/*.yaml` + `routes/*.xml`；S11 使用 YAML `route.lane_trace` |
 | 评测入口 | `leaderboard/scripts/run_evaluation.sh` | `carla_eval/evaluate.py` |
 | 结果输出 | 官方 checkpoint / result json | `logs/.../frames.jsonl` + `reports/.../evaluation_report.json/csv` |
 | 当前是否已直接接入 LMDrive 官方 evaluator | 参考方案 | 否，当前未直接使用 |

@@ -567,6 +567,112 @@ def detect_rain_night_slowdown(frames, cfg):
     return events
 
 
+def detect_composite_long_route(frames, cfg):
+    events = []
+
+    long_cfg = cfg.get("success_criteria", {}).get("long_route", {})
+    windows = cfg.get("action_windows", {})
+    if not long_cfg.get("enabled", False) or not windows:
+        return events
+
+    accel_frame = first_true_frame(frames, "reach_target_speed_60")
+    left_frame = first_true_frame(frames, "complete_left_turn")
+    slow_frame = first_true_frame(frames, "reach_target_speed_30")
+    right_frame = first_true_frame(frames, "complete_right_turn")
+
+    accel_cfg = windows.get("accelerate_to_60", {})
+    left_cfg = windows.get("left_turn_1", {})
+    slow_cfg = windows.get("slow_to_30", {})
+    right_cfg = windows.get("right_turn_1", {})
+
+    if accel_frame is not None:
+        events.append({
+            "event": "speed_60_reached",
+            "timestamp": accel_frame.get("timestamp", 0.0),
+            "target_speed_kmh": accel_cfg.get("target_speed_kmh"),
+            "actual_speed_kmh": accel_frame.get("ego_speed_kmh"),
+            "progress_m": accel_frame.get("route_progress_m"),
+            "hold_time_s": accel_frame.get("speed_60_hold_time"),
+            "required_hold_seconds": accel_cfg.get("required_hold_seconds"),
+        })
+
+    if left_frame is not None:
+        events.append({
+            "event": "left_turn_completed",
+            "timestamp": left_frame.get("timestamp", 0.0),
+            "progress_m": left_frame.get("route_progress_m"),
+            "heading_change_deg": left_frame.get("left_turn_max_delta_deg"),
+            "required_heading_change_deg_min": left_cfg.get("expected_heading_change_deg_min"),
+        })
+
+    if slow_frame is not None:
+        events.append({
+            "event": "speed_30_reached",
+            "timestamp": slow_frame.get("timestamp", 0.0),
+            "target_speed_kmh": slow_cfg.get("target_speed_kmh"),
+            "actual_speed_kmh": slow_frame.get("ego_speed_kmh"),
+            "progress_m": slow_frame.get("route_progress_m"),
+            "hold_time_s": slow_frame.get("speed_30_hold_time"),
+            "required_hold_seconds": slow_cfg.get("required_hold_seconds"),
+        })
+
+    if right_frame is not None:
+        events.append({
+            "event": "right_turn_completed",
+            "timestamp": right_frame.get("timestamp", 0.0),
+            "progress_m": right_frame.get("route_progress_m"),
+            "heading_change_deg": right_frame.get("right_turn_min_delta_deg"),
+            "required_heading_change_deg_min": right_cfg.get("expected_heading_change_deg_min"),
+        })
+
+    final_frame = frames[-1] if frames else None
+    route_completion = float(final_frame.get("route_completion", 0.0)) if final_frame else 0.0
+    max_route_progress_m = float(final_frame.get("max_route_progress_m", 0.0)) if final_frame else 0.0
+    min_length_m = float(long_cfg.get("min_length_m", 0.0))
+    target_progress_m = float(long_cfg.get("target_progress_m", 0.0))
+    route_total_length_m = float(final_frame.get("route_total_length_m", 0.0)) if final_frame else 0.0
+    long_route_done = (
+        final_frame is not None
+        and (
+            (target_progress_m > 0.0 and max_route_progress_m >= target_progress_m)
+            or route_completion >= float(cfg.get("success_criteria", {}).get("route_completion_min", 0.98))
+        )
+        and route_total_length_m >= min_length_m
+    )
+    if long_route_done:
+        events.append({
+            "event": "long_route_completed",
+            "timestamp": final_frame.get("timestamp", 0.0),
+            "route_completion": route_completion,
+            "max_route_progress_m": max_route_progress_m,
+            "route_total_length_m": route_total_length_m,
+            "required_route_length_m": min_length_m,
+            "target_progress_m": target_progress_m,
+        })
+
+    if (
+        accel_frame is not None
+        and left_frame is not None
+        and slow_frame is not None
+        and right_frame is not None
+        and long_route_done
+        and not has_collision(frames)
+    ):
+        events.append({
+            "event": "task_success",
+            "timestamp": max(
+                float(accel_frame.get("timestamp", 0.0)),
+                float(left_frame.get("timestamp", 0.0)),
+                float(slow_frame.get("timestamp", 0.0)),
+                float(right_frame.get("timestamp", 0.0)),
+                float(final_frame.get("timestamp", 0.0)),
+            ),
+            "success": True,
+        })
+
+    return events
+
+
 def detect_task_failure(frames, events, cfg):
     route_deviation_frame = first_true_frame(frames, "route_deviation")
     if failure_enabled(cfg, "route_deviation", default=True) and route_deviation_frame is not None:
@@ -641,6 +747,7 @@ def build_events(cfg, frames):
     events.extend(detect_cone_detour(frames, cfg))
     events.extend(detect_cut_in_brake(frames, cfg))
     events.extend(detect_rain_night_slowdown(frames, cfg))
+    events.extend(detect_composite_long_route(frames, cfg))
     events = detect_task_failure(frames, events, cfg)
     return sorted(events, key=lambda event: (float(event.get("timestamp", 0.0)), event.get("event", "")))
 

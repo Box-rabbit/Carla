@@ -7,6 +7,9 @@ import argparse
 import sys
 from pathlib import Path
 
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from carla_eval.evaluator import ScenarioEvaluator, load_scenario_config
 from carla_eval.scenarios_impl import ConeDetour
 

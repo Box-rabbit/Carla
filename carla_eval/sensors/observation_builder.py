@@ -6,6 +6,7 @@ Sensor layout mirrors lmdriver_agent.py from LMDrive:
   - rgb_front : 1200×900, FOV 100°, x=1.3 z=2.3 yaw=0
   - rgb_left  :  400×300, FOV 100°, x=1.3 z=2.3 yaw=-60
   - rgb_right :  400×300, FOV 100°, x=1.3 z=2.3 yaw=+60
+  - rgb_rear  :  400×300, FOV 100°, x=-1.3 z=2.3 yaw=180
   - lidar     : ray_cast, x=1.3 z=2.5 yaw=-90
 
 Only instantiated when enable_cameras=True in ScenarioEvaluator.
@@ -37,6 +38,7 @@ class ObservationBuilder:
         dict(id="rgb_front",  type="sensor.camera.rgb", w=1200, h=900,  fov=100, x=1.3, y=0.0, z=2.3, yaw=0.0),
         dict(id="rgb_left",   type="sensor.camera.rgb", w=400,  h=300,  fov=100, x=1.3, y=0.0, z=2.3, yaw=-60.0),
         dict(id="rgb_right",  type="sensor.camera.rgb", w=400,  h=300,  fov=100, x=1.3, y=0.0, z=2.3, yaw=60.0),
+        dict(id="rgb_rear",   type="sensor.camera.rgb", w=400,  h=300,  fov=100, x=-1.3, y=0.0, z=2.3, yaw=180.0),
         dict(id="lidar",      type="sensor.lidar.ray_cast",            x=1.3, y=0.0, z=2.5, yaw=-90.0),
     ]
 
@@ -76,7 +78,7 @@ class ObservationBuilder:
 
     def _on_lidar(self, sid: str, data: carla.LidarMeasurement) -> None:
         pts = np.frombuffer(data.raw_data, dtype=np.float32)
-        pts = pts.reshape(-1, 4)[:, :3]   # x,y,z
+        pts = pts.reshape(-1, 4)   # x,y,z,intensity
         self._latest[sid] = pts
         if not self._queues[sid].full():
             self._queues[sid].put_nowait(pts)

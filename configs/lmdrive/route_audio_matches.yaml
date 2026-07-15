@@ -1,0 +1,198 @@
+generated_by: carla_eval/tools/match_route_audio.py
+results_dir: results
+routes_file: routes/dongfeng_benchmark.xml
+scenario_annotations_file: configs/scenario_annotations/dongfeng_benchmark.yaml
+prefer_route: S11_basic_control_scene1_5km
+prefer_route_hard: true
+voice_lead_distance_m: 40.0
+matches:
+- audio_id: record_01_20260715_204043
+  status: matched
+  match_score: 95
+  route_id: S11_basic_control_scene1_5km
+  scenario_id: S11_basic_control_scene1_5km
+  town: Town05
+  scenario_type: BasicControlScene1
+  event_id: accelerate_to_80
+  event_source: scenario_action_window
+  route_file: routes/dongfeng_benchmark.xml
+  scenario_config: configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml
+  trigger:
+    type: route_distance
+    distance_m: 1460.0
+    input_mode: wav
+    audio_path: results/record_01_20260715_204043.wav
+  expected:
+    intents:
+    - ACCELERATE
+    - ACCELERATE_80
+    - GO_STRAIGHT
+    - KEEP_LANE
+    no_collision: true
+    target_speed_kmh: 80.0
+    min_reached_speed_kmh: 78.0
+    recognized_intents:
+    - GO_STRAIGHT
+  voice:
+    audio_id: record_01_20260715_204043
+    json_path: results/record_01_20260715_204043.json
+    audio_path: results/record_01_20260715_204043.wav
+    input_text: 保持当前车道加速到80公里每小时。
+    normalized_text: 保持当前车道加速到80公里每小时
+    instruction: Go straight ahead.
+    primary_intent: GO_STRAIGHT
+    recognized_intents:
+    - GO_STRAIGHT
+    target_speed_kmh: 80.0
+    confidence: 0.8
+    raw_audio_path: data\results\record_01_20260715_204043.wav
+- audio_id: record_02_20260715_204051
+  status: matched
+  match_score: 60
+  route_id: S11_basic_control_scene1_5km
+  scenario_id: S11_basic_control_scene1_5km
+  town: Town05
+  scenario_type: BasicControlScene1
+  event_id: left_turn_1
+  event_source: scenario_action_window
+  route_file: routes/dongfeng_benchmark.xml
+  scenario_config: configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml
+  trigger:
+    type: route_distance
+    distance_m: 145.0
+    input_mode: wav
+    audio_path: results/record_02_20260715_204051.wav
+  expected:
+    intents:
+    - LEFT_TURN
+    - TURN_LEFT
+    no_collision: true
+    target_speed_kmh: 30.0
+    recognized_intents:
+    - TURN_LEFT
+  voice:
+    audio_id: record_02_20260715_204051
+    json_path: results/record_02_20260715_204051.json
+    audio_path: results/record_02_20260715_204051.wav
+    input_text: 注意前方向左转弯。
+    normalized_text: 注意前方向左转弯
+    instruction: Turn left ahead.
+    primary_intent: TURN_LEFT
+    recognized_intents:
+    - TURN_LEFT
+    target_speed_kmh: null
+    confidence: 0.8
+    raw_audio_path: data\results\record_02_20260715_204051.wav
+- audio_id: record_03_20260715_204059
+  status: matched
+  match_score: 56
+  route_id: S11_basic_control_scene1_5km
+  scenario_id: S11_basic_control_scene1_5km
+  town: Town05
+  scenario_type: BasicControlScene1
+  event_id: slow_to_30
+  event_source: scenario_action_window
+  route_file: routes/dongfeng_benchmark.xml
+  scenario_config: configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml
+  trigger:
+    type: route_distance
+    distance_m: 2860.0
+    input_mode: wav
+    audio_path: results/record_03_20260715_204059.wav
+  expected:
+    intents:
+    - SLOW_DOWN
+    - SLOW_DOWN_30
+    no_collision: true
+    target_speed_kmh: 30.0
+    recognized_intents:
+    - PEDESTRIAN_CAUTION
+    - SLOW_DOWN
+  voice:
+    audio_id: record_03_20260715_204059
+    json_path: results/record_03_20260715_204059.json
+    audio_path: results/record_03_20260715_204059.wav
+    input_text: 哎，注意前方有行人横穿马路，注意减速。
+    normalized_text: 哎 注意前方有行人横穿马路 注意减速
+    instruction: Be mindful of pedestrians ahead, then slow down now.
+    primary_intent: PEDESTRIAN_CAUTION
+    recognized_intents:
+    - PEDESTRIAN_CAUTION
+    - SLOW_DOWN
+    target_speed_kmh: null
+    confidence: 0.8
+    raw_audio_path: data\results\record_03_20260715_204059.wav
+- audio_id: record_04_20260715_204105
+  status: matched
+  match_score: 60
+  route_id: S11_basic_control_scene1_5km
+  scenario_id: S11_basic_control_scene1_5km
+  town: Town05
+  scenario_type: BasicControlScene1
+  event_id: right_turn_1
+  event_source: scenario_action_window
+  route_file: routes/dongfeng_benchmark.xml
+  scenario_config: configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml
+  trigger:
+    type: route_distance
+    distance_m: 55.0
+    input_mode: wav
+    audio_path: results/record_04_20260715_204105.wav
+  expected:
+    intents:
+    - RIGHT_TURN
+    - TURN_RIGHT
+    no_collision: true
+    target_speed_kmh: 28.0
+    recognized_intents:
+    - TURN_RIGHT
+  voice:
+    audio_id: record_04_20260715_204105
+    json_path: results/record_04_20260715_204105.json
+    audio_path: results/record_04_20260715_204105.wav
+    input_text: 向右转弯。
+    normalized_text: 向右转弯
+    instruction: Turn right ahead.
+    primary_intent: TURN_RIGHT
+    recognized_intents:
+    - TURN_RIGHT
+    target_speed_kmh: null
+    confidence: 0.95
+    raw_audio_path: data\results\record_04_20260715_204105.wav
+- audio_id: record_05_20260715_204111
+  status: matched
+  match_score: 60
+  route_id: S11_basic_control_scene1_5km
+  scenario_id: S11_basic_control_scene1_5km
+  town: Town05
+  scenario_type: BasicControlScene1
+  event_id: lane_change_left
+  event_source: scenario_action_window
+  route_file: routes/dongfeng_benchmark.xml
+  scenario_config: configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml
+  trigger:
+    type: route_distance
+    distance_m: 380.0
+    input_mode: wav
+    audio_path: results/record_05_20260715_204111.wav
+  expected:
+    intents:
+    - CHANGE_LEFT
+    - LANE_CHANGE_LEFT
+    no_collision: true
+    target_speed_kmh: 45.0
+    recognized_intents:
+    - LANE_CHANGE_LEFT
+  voice:
+    audio_id: record_05_20260715_204111
+    json_path: results/record_05_20260715_204111.json
+    audio_path: results/record_05_20260715_204111.wav
+    input_text: 向左变道。
+    normalized_text: 向左变道
+    instruction: Change lane to the left.
+    primary_intent: LANE_CHANGE_LEFT
+    recognized_intents:
+    - LANE_CHANGE_LEFT
+    target_speed_kmh: null
+    confidence: 1.0
+    raw_audio_path: data\results\record_05_20260715_204111.wav

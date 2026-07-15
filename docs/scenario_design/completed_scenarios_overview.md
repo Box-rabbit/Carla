@@ -2,7 +2,7 @@
 
 ## 1. 项目当前完成情况概述
 
-当前项目 `Dongfeng CARLA Scenario Evaluation` 已完成 6 个真实 CARLA 闭环评测场景，覆盖三类核心能力：
+当前项目 `Dongfeng CARLA Scenario Evaluation` 已完成 6 个稳定真实 CARLA 闭环评测场景，并新增 `S11_basic_control_scene1_5km` 作为 PDF 场景1基础操控的第一版长路线配置。
 
 - `basic_control`
 - `complex_obstacle`
@@ -16,6 +16,10 @@
 - `S05_cone_detour`
 - `S07_cut_in_brake`
 - `S08_rain_night_danger_slowdown`
+
+新增第一版场景：
+
+- `S11_basic_control_scene1_5km`
 
 ## 2. 三大类别说明
 
@@ -128,6 +132,19 @@ Realistic urgent setting:
 - Key metrics: `mean_speed ≈ 9.05 km/h`, `max_speed ≈ 12.22 km/h`, `mean_hazard_score ≈ 0.78`, `safe_speed_hold_time = 2.0 s`, `travelled_distance ≈ 26.66 m`, `success = true`, `collision_count = 0`
 - Result: 场景成功完成，ego 在雨夜危险环境下能够稳定降速并维持安全低速，无碰撞。
 
+### 3.7 S11_basic_control_scene1_5km
+
+- Scenario ID: `S11_basic_control_scene1_5km`
+- Category: `basic_control`
+- Goal: 对应 PDF 场景1基础操控工况；晴天白天、无动态干扰，ego 在城市道路连续驾驶 `5km`，正常车速约 `50 km/h`，完成 route 上全部真实路口左/右转、向左变道、提速至 `80 km/h`、减速至 `30 km/h`。
+- Config path: `configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml`
+- Run script: `carla_eval/run_carla_s11_basic_control_scene1.py`
+- Route source: `Town05` 中基于 CARLA waypoint 拓扑的 `carla_lane_trace` 运行时生成路线。
+- Trigger / control mechanism: 已支持通过 `configs/lmdrive/route_audio_matches.yaml` 将 5 条离线语音匹配到 S11 route/action，并可用 `--voice-overlay` 固定窗口显示语音文本；车辆控制仍由场景控制器执行，尚未由真实 LMDrive/VLA 模型驱动。全部左/右转窗口由 route heading 自动检测，左变道和减速窗口按路线进度触发。
+- Traffic condition policy: 场景层保留或配置 CARLA traffic light 等交通路况，并记录红灯状态/停止线/违规；红灯停车动作应由 VLA / Agent 输出控制完成。
+- Key events / subtasks: `reach_target_speed_80`、`complete_right_turn`、`complete_left_turn`、`complete_all_route_turns`、`complete_lane_change_left`、`reach_target_speed_30`、`finish_5km_route`
+- Current status: 第一版已落地为 config、runner、benchmark annotation；仍需真实 CARLA replay 后根据可视化 route 和日志继续调参。
+
 ## 4. 关于 S05 / S07 / S08 的非 oracle 设计说明
 
 ### 4.1 S05_cone_detour
@@ -144,10 +161,10 @@ Realistic urgent setting:
 
 ## 5. Summary
 
-当前项目已完成的 6 个闭环评测场景，已经覆盖：
+当前项目已完成的 6 个稳定闭环评测场景已经覆盖：
 
 - 基础操控 `basic_control`
 - 复杂避障 `complex_obstacle`
 - 应急响应 `emergency_response`
 
-从能力维度看，这些场景已经覆盖了基础车道保持与速度控制、目标车道变换、行人避让、施工锥桶绕行、突发切入应急制动以及雨夜危险环境安全降速等关键任务。整体上，这 6 个场景构成了项目当前阶段较完整的 CARLA closed-loop scenario evaluation 基础能力集合。
+从能力维度看，这些场景已经覆盖了基础车道保持与速度控制、目标车道变换、行人避让、施工锥桶绕行、突发切入应急制动以及雨夜危险环境安全降速等关键任务。`S11_basic_control_scene1_5km` 进一步补齐 PDF 场景1要求的长路线组合基础操控，但应在真实 CARLA replay 通过后再标记为稳定完成。

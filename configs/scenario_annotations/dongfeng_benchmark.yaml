@@ -1,0 +1,92 @@
+description: Dongfeng benchmark scenario annotations in LMDrive/Leaderboard style.
+available_scenarios:
+  - Town03:
+      - scenario_id: S01_keep_lane_speed_60
+        route_id: S01_keep_lane_speed_60
+        scenario_type: KeepLaneSpeed
+        config_path: configs/scenarios/basic_control/S01_keep_lane_speed_60.yaml
+        available_event_configurations:
+          - trigger:
+              type: time
+              value: 5.0
+            expected:
+              intents: [KEEP_LANE, ACCELERATE]
+              target_speed_kmh: 60
+              no_collision: true
+      - scenario_id: S02_lane_change
+        route_id: S02_lane_change
+        scenario_type: LaneChange
+        config_path: configs/scenarios/basic_control/S02_lane_change.yaml
+        available_event_configurations:
+          - trigger:
+              type: time
+              value: 5.0
+            expected:
+              intents: [LANE_CHANGE_LEFT]
+              lane_change_direction: left
+              no_collision: true
+      - scenario_id: S04_pedestrian_slowdown
+        route_id: S04_pedestrian_slowdown
+        scenario_type: PedestrianSlowdown
+        config_path: configs/scenarios/complex_obstacle/S04_pedestrian_slowdown.yaml
+        available_event_configurations:
+          - trigger:
+              type: route_distance
+              distance_m: 35.0
+            expected:
+              intents: [PEDESTRIAN_CAUTION, SLOW_DOWN]
+              target_speed_max_kmh: 15
+              no_collision: true
+      - scenario_id: S05_cone_detour
+        route_id: S05_cone_detour
+        scenario_type: ConeDetour
+        config_path: configs/scenarios/complex_obstacle/S05_cone_detour.yaml
+        available_event_configurations:
+          - trigger:
+              type: route_distance
+              distance_m: 28.0
+            expected:
+              intents: [CONE_DETOUR, LANE_CHANGE_LEFT, RETURN_TO_LANE]
+              no_collision: true
+      - scenario_id: S07_cut_in_brake
+        route_id: S07_cut_in_brake
+        scenario_type: CutInBrake
+        config_path: configs/scenarios/emergency_response/S07_cut_in_brake.yaml
+        available_event_configurations:
+          - trigger:
+              type: ttc_or_distance
+              distance_m: 27.0
+              ttc_s: 5.5
+            expected:
+              intents: [CUT_IN_CAUTION, EMERGENCY_BRAKE]
+              no_collision: true
+      - scenario_id: S08_rain_night_danger_slowdown
+        route_id: S08_rain_night_danger_slowdown
+        scenario_type: RainNightSlowdown
+        config_path: configs/scenarios/emergency_response/S08_rain_night_danger_slowdown.yaml
+        available_event_configurations:
+          - trigger:
+              type: weather_risk
+              hazard_score_min: 0.6
+            expected:
+              intents: [DANGEROUS_WEATHER, SLOW_DOWN]
+              target_speed_max_kmh: 18
+              no_collision: true
+  - Town05:
+      - scenario_id: S11_basic_control_scene1_5km
+        route_id: S11_basic_control_scene1_5km
+        scenario_type: BasicControlScene1
+        config_path: configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml
+        available_event_configurations:
+          - trigger:
+              type: route_distance
+              distance_m: 0.0
+              input_mode: none
+            expected:
+              intents: [KEEP_LANE, RIGHT_TURN, LEFT_TURN, LANE_CHANGE_LEFT, ACCELERATE_80, SLOW_DOWN_30]
+              target_progress_m: 5000
+              cruise_speed_kmh: 50
+              target_speed_kmh: 80
+              target_speed_max_kmh_after_slowdown: 30
+              all_route_turns: true
+              no_collision: true

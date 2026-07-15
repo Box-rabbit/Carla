@@ -247,9 +247,14 @@ def infer_subtask_metrics(cfg, events):
         "keep_lane": {"task_success"},
         "reach_target_speed": {"speed_target_reached"},
         "target_speed_control": {"speed_target_reached"},
+        "reach_target_speed_60": {"speed_60_reached"},
+        "reach_target_speed_30": {"speed_30_reached"},
         "lane_change": {"lane_change_completed"},
         "change_lane_left": {"lane_change_completed"},
         "change_lane_right": {"lane_change_completed"},
+        "complete_left_turn": {"left_turn_completed"},
+        "complete_right_turn": {"right_turn_completed"},
+        "finish_long_route": {"long_route_completed"},
         "avoid_pedestrian": {"safe_slowdown_completed"},
         "slow_down": {"safe_slowdown_completed", "safe_speed_reached"},
         "detour_and_return": {"return_to_lane_completed"},
@@ -598,6 +603,44 @@ def build_report(cfg, frames, events):
             "mean_hazard_score": safe_speed.get("mean_hazard_score") if safe_speed else mean(hazards),
             "danger_slowdown_success": safe_speed is not None and success,
             "danger_trigger_mode": "weather-hazard-score",
+        })
+
+    long_cfg = cfg.get("success_criteria", {}).get("long_route", {})
+    if long_cfg.get("enabled", False):
+        speed_60 = find_event(events, "speed_60_reached")
+        left_turn = find_event(events, "left_turn_completed")
+        speed_30 = find_event(events, "speed_30_reached")
+        right_turn = find_event(events, "right_turn_completed")
+        long_route = find_event(events, "long_route_completed")
+
+        report.update({
+            "speed_60_reached": speed_60 is not None,
+            "speed_60_reached_time_s": speed_60.get("timestamp") if speed_60 else None,
+            "speed_60_actual_kmh": speed_60.get("actual_speed_kmh") if speed_60 else None,
+            "speed_60_hold_time_s": speed_60.get("hold_time_s") if speed_60 else None,
+            "left_turn_completed": left_turn is not None,
+            "left_turn_completed_time_s": left_turn.get("timestamp") if left_turn else None,
+            "left_turn_heading_change_deg": left_turn.get("heading_change_deg") if left_turn else None,
+            "speed_30_reached": speed_30 is not None,
+            "speed_30_reached_time_s": speed_30.get("timestamp") if speed_30 else None,
+            "speed_30_actual_kmh": speed_30.get("actual_speed_kmh") if speed_30 else None,
+            "speed_30_hold_time_s": speed_30.get("hold_time_s") if speed_30 else None,
+            "right_turn_completed": right_turn is not None,
+            "right_turn_completed_time_s": right_turn.get("timestamp") if right_turn else None,
+            "right_turn_heading_change_deg": right_turn.get("heading_change_deg") if right_turn else None,
+            "long_route_completed": long_route is not None,
+            "long_route_completed_time_s": long_route.get("timestamp") if long_route else None,
+            "required_route_length_m": long_cfg.get("min_length_m"),
+            "required_route_progress_m": long_cfg.get("target_progress_m"),
+            "long_route_progress_m": long_route.get("max_route_progress_m") if long_route else None,
+            "composite_long_route_success": (
+                speed_60 is not None
+                and left_turn is not None
+                and speed_30 is not None
+                and right_turn is not None
+                and long_route is not None
+                and success
+            ),
         })
 
     return report

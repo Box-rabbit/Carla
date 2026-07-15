@@ -1,18 +1,41 @@
 # Dongfeng CARLA Scenario Evaluation
 
-面向东风 `XH-202602` 赛题的 CARLA 场景构建与指标评测仓库。  
-当前仓库重点负责三类可复现场景与统一评测体系：
+面向东风 `XH-202602` 赛题的 CARLA 场景构建与指标评测仓库。
+
+当前仓库的主线职责：
+
+- 构建可复现的 CARLA 闭环测试场景
+- 维护统一的场景 YAML / route XML / 评测指标体系
+- 为后续 `LMDrive / Voice2LMDrive` 接入提供清晰边界
+
+当前主线场景类别：
 
 - `basic_control`
 - `complex_obstacle`
 - `emergency_response`
 
-本仓库当前不是直接复用 `LMDrive` 官方 `leaderboard` evaluator 运行，而是采用独立的 `carla_eval` runner、场景 YAML 配置、运行时指标检测与离线报告生成流程。  
-`LMDrive / LangAuto / CARLA Leaderboard / ScenarioRunner / Bench2Drive` 主要作为场景与评测设计参考来源。
+当前并不直接复用 `LMDrive` 官方 `leaderboard evaluator` 作为主运行入口，而是采用独立的 `carla_eval` runner、运行时日志采集和离线报告生成流程。
+
+同时，仓库已经新增一层轻量 `LMDrive / CARLA Leaderboard` 风格 benchmark 入口：
+
+- route XML: [routes/dongfeng_benchmark.xml](routes/dongfeng_benchmark.xml)
+- scenario annotation: [configs/scenario_annotations/dongfeng_benchmark.yaml](configs/scenario_annotations/dongfeng_benchmark.yaml)
+- unified runner: [carla_eval/run_benchmark.py](carla_eval/run_benchmark.py)
+- 说明文档: [docs/pipeline/lmdrive_style_benchmark.md](docs/pipeline/lmdrive_style_benchmark.md)
+
+## 先看哪里
+
+第一次进入仓库，建议按这个顺序看：
+
+1. `README.md`
+2. [docs/README.md](docs/README.md)
+3. [docs/scenario_design/completed_scenarios_overview.md](docs/scenario_design/completed_scenarios_overview.md)
+4. [configs/README.md](configs/README.md)
+5. [routes/README.md](routes/README.md)
 
 ## 当前状态
 
-当前已完成 6 个真实 CARLA 闭环评测场景：
+当前已完成 6 个稳定的 CARLA 闭环评测场景，并新增 1 个 PDF 场景1长路线基础操控配置：
 
 - `S01_keep_lane_speed_60`
 - `S02_lane_change`
@@ -20,6 +43,7 @@
 - `S05_cone_detour`
 - `S07_cut_in_brake`
 - `S08_rain_night_danger_slowdown`
+- `S11_basic_control_scene1_5km`
 
 这些场景均满足以下基本要求：
 
@@ -40,17 +64,25 @@ benchmark 映射见：
 ```text
 carla_eval/                  场景运行脚本、运行时检测、离线评测、报告生成
 configs/scenarios/           场景配置唯一真源
+configs/scenario_annotations/ LMDrive-style 场景 annotation
 configs/lmdrive/             LMDrive / Voice2LMDrive 最小接入配置
+configs/scenarios_db/        场景索引数据库
 configs/metrics/             指标输出 schema
 configs/taxonomy/            场景分类与核心指标分类
 routes/                      route XML
 data/audio/                  语音输入 wav
+results/                     当前 5 条离线语音 wav/json 样例
 logs/                        场景运行日志输出
 reports/                     单场景评测报告与汇总表
 docs/scenario_design/        场景设计与 benchmark 映射
 docs/metrics/                指标、日志、事件、报告设计说明
 docs/pipeline/               LMDrive / benchmark 调研与接入说明
 ```
+
+当前约定：
+
+- 场景真源：`configs/scenarios/*.yaml`
+- route 真源：短场景使用 `routes/*.xml`；S11 长路线使用场景 YAML 中的 `route.mode: carla_lane_trace`
 
 ## 运行环境
 
@@ -69,6 +101,27 @@ python carla_eval/run_carla_s04_pedestrian_slowdown.py
 python carla_eval/run_carla_s05_cone_detour.py
 python carla_eval/run_carla_s07_cut_in_brake.py
 python carla_eval/run_carla_s08_rain_night_danger_slowdown.py
+python carla_eval/run_carla_s11_basic_control_scene1.py
+```
+
+### 2. 使用统一 benchmark 入口
+
+列出全部 route/scenario：
+
+```bash
+python carla_eval/run_benchmark.py --list
+```
+
+运行单个 route：
+
+```bash
+python carla_eval/run_benchmark.py --route-id S05_cone_detour
+```
+
+运行全部 benchmark：
+
+```bash
+python carla_eval/run_benchmark.py
 ```
 
 默认输出：
@@ -80,7 +133,7 @@ python carla_eval/run_carla_s08_rain_night_danger_slowdown.py
 - `S07` 默认日志目录为 `logs/emergency_response/S07_cut_in_brake_realistic_urgent/`
 - 其他场景默认日志目录与 `scenario_id` 对应
 
-### 2. 离线生成评测报告
+### 3. 离线生成评测报告
 
 ```bash
 python carla_eval/evaluate.py \
@@ -108,6 +161,11 @@ python carla_eval/evaluate.py \
   - 目标：按指令向左变道并保持目标车道
   - 配置：[configs/scenarios/basic_control/S02_lane_change.yaml](configs/scenarios/basic_control/S02_lane_change.yaml)
   - 路线：[routes/basic_control/S02_lane_change.xml](routes/basic_control/S02_lane_change.xml)
+
+- `S11_basic_control_scene1_5km`
+  - 目标：对应 PDF 场景1基础操控工况；晴天白天城市道路净空连续驾驶 `5km`，正常车速约 `50 km/h`，完成 route 上全部真实路口左/右转、向左变道、提速至 `80 km/h`、减速至 `30 km/h`
+  - 配置：[configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml](configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml)
+  - 路线：由场景 YAML 中 `route.mode: carla_lane_trace` 在 `Town05` 自动生成，并在 [routes/dongfeng_benchmark.xml](routes/dongfeng_benchmark.xml) 中注册统一 benchmark route id
 
 ### complex_obstacle
 
@@ -179,6 +237,7 @@ python carla_eval/evaluate.py \
 
 - 当前仓库已经有自己的场景运行与评测链路
 - `LMDrive` 是上层模型接入方向，不是当前 runner 的直接依赖
+- 新增的 `run_benchmark.py` 已经把场景入口、route 来源、scenario annotation 和 agent interface 向 LMDrive 风格对齐
 
 相关说明见：
 
@@ -189,5 +248,6 @@ python carla_eval/evaluate.py \
 ## 说明
 
 - `configs/scenarios/*.yaml` 是当前场景定义的唯一真源
+- 短场景 route 由 `routes/*.xml` 定义；S11 长路线 route 由场景 YAML 中的 `route.lane_trace` 定义，并在 `routes/dongfeng_benchmark.xml` 中注册统一 route id
 - 早期 `docs/*/task*.md` 中部分文件属于设计稿或阶段性说明，阅读时应优先以当前 config、runner 和 report 为准
 - 当前 README 仅描述仓库已落地的场景与评测能力，不代表语音链路、LMDrive 主模型接入、车规级轻量化部署已经全部完成
