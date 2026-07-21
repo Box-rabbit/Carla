@@ -673,6 +673,157 @@ def detect_composite_long_route(frames, cfg):
     return events
 
 
+def detect_complex_scene2(frames, cfg):
+    events = []
+
+    scene_cfg = cfg.get("success_criteria", {}).get("complex_scene2", {})
+    if not scene_cfg.get("enabled", False):
+        return events
+
+    ped_detected = first_true_frame(frames, "pedestrian_detected")
+    ped_slowdown = first_true_frame(frames, "ped_slowdown_started")
+    ped_done = first_true_frame(frames, "safe_slowdown_completed")
+    slow_vehicle = first_true_frame(frames, "slow_vehicle_detected")
+    lane_change = first_true_frame(frames, "lane_change_started")
+    overtake = first_true_frame(frames, "overtake_completed")
+    return_lane = first_true_frame(frames, "return_to_lane_completed")
+    bus_detected = first_true_frame(frames, "bus_stop_detected")
+    bus_slowdown = first_true_frame(frames, "bus_stop_slowdown_started")
+    bus_done = first_true_frame(frames, "bus_stop_pass_completed")
+    route_done = first_true_frame(frames, "long_route_completed")
+
+    if ped_detected is not None:
+        events.append({
+            "event": "pedestrian_detected",
+            "timestamp": ped_detected.get("timestamp", 0.0),
+            "distance_to_pedestrian": ped_detected.get("distance_to_pedestrian"),
+            "detection_distance_m": scene_cfg.get("pedestrian_detection_distance_m"),
+        })
+
+    if ped_slowdown is not None:
+        response_time = None
+        if ped_detected is not None:
+            response_time = float(ped_slowdown.get("timestamp", 0.0)) - float(ped_detected.get("timestamp", 0.0))
+        events.append({
+            "event": "slowdown_started",
+            "timestamp": ped_slowdown.get("timestamp", 0.0),
+            "distance_to_pedestrian": ped_slowdown.get("distance_to_pedestrian"),
+            "safe_speed_kmh": scene_cfg.get("pedestrian_safe_speed_kmh"),
+            "response_time_s": response_time,
+        })
+
+    if ped_done is not None:
+        events.append({
+            "event": "safe_slowdown_completed",
+            "timestamp": ped_done.get("timestamp", 0.0),
+            "distance_to_pedestrian": ped_done.get("distance_to_pedestrian"),
+            "ego_speed_kmh": ped_done.get("ego_speed_kmh"),
+            "slowdown_hold_time": ped_done.get("pedestrian_hold_time"),
+            "required_slowdown_seconds": scene_cfg.get("pedestrian_required_hold_seconds"),
+            "min_distance_to_pedestrian": ped_done.get("min_distance_to_pedestrian_so_far"),
+            "safe_speed_kmh": scene_cfg.get("pedestrian_safe_speed_kmh"),
+            "min_safe_distance_m": scene_cfg.get("pedestrian_min_safe_distance_m"),
+        })
+
+    if slow_vehicle is not None:
+        events.append({
+            "event": "slow_vehicle_detected",
+            "timestamp": slow_vehicle.get("timestamp", 0.0),
+            "front_vehicle_gap": slow_vehicle.get("front_vehicle_gap"),
+            "front_vehicle_distance": slow_vehicle.get("front_vehicle_distance"),
+        })
+
+    if lane_change is not None:
+        response_time = None
+        if slow_vehicle is not None:
+            response_time = float(lane_change.get("timestamp", 0.0)) - float(slow_vehicle.get("timestamp", 0.0))
+        events.append({
+            "event": "lane_change_started",
+            "timestamp": lane_change.get("timestamp", 0.0),
+            "front_vehicle_gap": lane_change.get("front_vehicle_gap"),
+            "target_lateral_offset_m": lane_change.get("target_lateral_offset_m"),
+            "response_time_s": response_time,
+        })
+
+    if overtake is not None:
+        events.append({
+            "event": "overtake_completed",
+            "timestamp": overtake.get("timestamp", 0.0),
+            "front_vehicle_gap": overtake.get("front_vehicle_gap"),
+            "min_front_vehicle_gap_m": overtake.get("min_front_vehicle_gap_so_far"),
+        })
+
+    if return_lane is not None:
+        events.append({
+            "event": "return_to_lane_completed",
+            "timestamp": return_lane.get("timestamp", 0.0),
+            "return_hold_time": return_lane.get("return_hold_time"),
+            "required_return_hold_seconds": scene_cfg.get("return_required_hold_seconds"),
+            "lateral_offset_from_lane_center": return_lane.get("lateral_offset_from_route_m"),
+            "return_lane_tolerance_m": scene_cfg.get("return_lane_tolerance_m"),
+        })
+
+    if bus_detected is not None:
+        events.append({
+            "event": "bus_stop_detected",
+            "timestamp": bus_detected.get("timestamp", 0.0),
+            "distance_to_bus_stop": bus_detected.get("distance_to_bus_stop"),
+        })
+
+    if bus_slowdown is not None:
+        response_time = None
+        if bus_detected is not None:
+            response_time = float(bus_slowdown.get("timestamp", 0.0)) - float(bus_detected.get("timestamp", 0.0))
+        events.append({
+            "event": "bus_stop_slowdown_started",
+            "timestamp": bus_slowdown.get("timestamp", 0.0),
+            "distance_to_bus_stop": bus_slowdown.get("distance_to_bus_stop"),
+            "target_speed_kmh": scene_cfg.get("bus_stop_target_speed_kmh"),
+            "response_time_s": response_time,
+        })
+
+    if bus_done is not None:
+        events.append({
+            "event": "bus_stop_pass_completed",
+            "timestamp": bus_done.get("timestamp", 0.0),
+            "ego_speed_kmh": bus_done.get("ego_speed_kmh"),
+            "bus_stop_hold_time": bus_done.get("bus_stop_hold_time"),
+            "required_hold_seconds": scene_cfg.get("bus_stop_required_hold_seconds"),
+            "target_speed_kmh": scene_cfg.get("bus_stop_target_speed_kmh"),
+        })
+
+    if route_done is not None:
+        events.append({
+            "event": "long_route_completed",
+            "timestamp": route_done.get("timestamp", 0.0),
+            "max_route_progress_m": route_done.get("max_route_progress_m"),
+            "target_progress_m": scene_cfg.get("target_progress_m"),
+            "route_completion": route_done.get("route_completion"),
+        })
+
+    if (
+        ped_done is not None
+        and overtake is not None
+        and return_lane is not None
+        and bus_done is not None
+        and route_done is not None
+        and not has_collision(frames)
+    ):
+        events.append({
+            "event": "task_success",
+            "timestamp": max(
+                float(ped_done.get("timestamp", 0.0)),
+                float(overtake.get("timestamp", 0.0)),
+                float(return_lane.get("timestamp", 0.0)),
+                float(bus_done.get("timestamp", 0.0)),
+                float(route_done.get("timestamp", 0.0)),
+            ),
+            "success": True,
+        })
+
+    return events
+
+
 def detect_task_failure(frames, events, cfg):
     route_deviation_frame = first_true_frame(frames, "route_deviation")
     if failure_enabled(cfg, "route_deviation", default=True) and route_deviation_frame is not None:
@@ -748,6 +899,7 @@ def build_events(cfg, frames):
     events.extend(detect_cut_in_brake(frames, cfg))
     events.extend(detect_rain_night_slowdown(frames, cfg))
     events.extend(detect_composite_long_route(frames, cfg))
+    events.extend(detect_complex_scene2(frames, cfg))
     events = detect_task_failure(frames, events, cfg)
     return sorted(events, key=lambda event: (float(event.get("timestamp", 0.0)), event.get("event", "")))
 

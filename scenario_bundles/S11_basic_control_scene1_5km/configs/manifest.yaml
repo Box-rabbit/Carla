@@ -1,0 +1,31 @@
+scenario_id: S11_basic_control_scene1_5km
+route_id: S11_basic_control_scene1_5km
+town: Town05
+category: basic_control
+carla_version: 0.9.10.1
+source:
+  routes_file: routes/dongfeng_benchmark.xml
+  annotations_file: configs/scenario_annotations/dongfeng_benchmark.yaml
+  voice_matches_file: configs/lmdrive/route_audio_matches.yaml
+  scenario_config: configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml
+files:
+  route_xml: routes/S11_basic_control_scene1_5km.xml
+  scenario_config: configs/S11_basic_control_scene1_5km.yaml
+  annotations: configs/S11_basic_control_scene1_5km.annotations.json
+  voice_matches: configs/route_audio_matches_S11_basic_control_scene1_5km.yaml
+  validation: validation/route_validation.json
+route:
+  source_mode: carla_lane_trace
+  exported_mode: route_xml_dense_validated
+  waypoint_count: 2728
+  town: Town05
+  interpolated_length_m: 5280.706
+  max_adjacent_gap_m: 4.654
+  mean_adjacent_gap_m: 1.936
+  target_length_m: 5200.0
+  validation_passed: true
+annotations:
+  format: json
+notes:
+- This scenario still uses runtime route generation in its source scenario YAML.
+- Dense route XML validated on CARLA Town05 and exported on 2026-07-20.

@@ -35,7 +35,7 @@
 
 ## 当前状态
 
-当前已完成 6 个稳定的 CARLA 闭环评测场景，并新增 1 个 PDF 场景1长路线基础操控配置：
+当前已完成 6 个稳定的 CARLA 闭环评测场景，并新增 2 个 PDF 长路线复合场景配置：
 
 - `S01_keep_lane_speed_60`
 - `S02_lane_change`
@@ -44,6 +44,7 @@
 - `S07_cut_in_brake`
 - `S08_rain_night_danger_slowdown`
 - `S11_basic_control_scene1_5km`
+- `S12_complex_obstacle_scene2_8km`
 
 这些场景均满足以下基本要求：
 
@@ -82,7 +83,7 @@ docs/pipeline/               LMDrive / benchmark 调研与接入说明
 当前约定：
 
 - 场景真源：`configs/scenarios/*.yaml`
-- route 真源：短场景使用 `routes/*.xml`；S11 长路线使用场景 YAML 中的 `route.mode: carla_lane_trace`
+- route 真源：短场景使用 `routes/*.xml`；`S11/S12` 长路线使用场景 YAML 中的 `route.mode: carla_lane_trace`
 
 ## 运行环境
 
@@ -99,6 +100,7 @@ python carla_eval/run_carla_s01_keep_lane_speed.py
 python carla_eval/run_carla_s02_lane_change.py
 python carla_eval/run_carla_s04_pedestrian_slowdown.py
 python carla_eval/run_carla_s05_cone_detour.py
+python carla_eval/run_carla_s12_complex_obstacle_scene2.py
 python carla_eval/run_carla_s07_cut_in_brake.py
 python carla_eval/run_carla_s08_rain_night_danger_slowdown.py
 python carla_eval/run_carla_s11_basic_control_scene1.py
@@ -178,6 +180,11 @@ python carla_eval/evaluate.py \
   - 目标：检测锥桶后单车道左绕并回原车道
   - 配置：[configs/scenarios/complex_obstacle/S05_cone_detour.yaml](configs/scenarios/complex_obstacle/S05_cone_detour.yaml)
   - 路线：[routes/complex_obstacle/S05_cone_detour.xml](routes/complex_obstacle/S05_cone_detour.xml)
+
+- `S12_complex_obstacle_scene2_8km`
+  - 目标：对应 PDF 场景2复杂避障工况；阴天傍晚城市次干道连续驾驶 `8km`，串联完成前方行人减速避让、慢车左变道超越、公交站减速谨慎通过
+  - 配置：[configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml](configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml)
+  - 路线：由场景 YAML 中 `route.mode: carla_lane_trace` 在 `Town05` 自动生成，并在 [routes/dongfeng_benchmark.xml](routes/dongfeng_benchmark.xml) 中注册统一 benchmark route id
 
 ### emergency_response
 

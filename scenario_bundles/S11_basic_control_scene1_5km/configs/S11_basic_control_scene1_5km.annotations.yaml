@@ -1,0 +1,27 @@
+description: Standalone scenario annotation bundle exported from the shared benchmark
+  file.
+available_scenarios:
+- Town05:
+  - scenario_id: S11_basic_control_scene1_5km
+    route_id: S11_basic_control_scene1_5km
+    scenario_type: BasicControlScene1
+    config_path: configs/S11_basic_control_scene1_5km.yaml
+    available_event_configurations:
+    - trigger:
+        type: route_distance
+        distance_m: 0.0
+        input_mode: none
+      expected:
+        intents:
+        - KEEP_LANE
+        - RIGHT_TURN
+        - LEFT_TURN
+        - LANE_CHANGE_LEFT
+        - ACCELERATE_80
+        - SLOW_DOWN_30
+        target_progress_m: 5000
+        cruise_speed_kmh: 50
+        target_speed_kmh: 80
+        target_speed_max_kmh_after_slowdown: 30
+        all_route_turns: true
+        no_collision: true

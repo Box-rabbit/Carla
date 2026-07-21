@@ -1,0 +1,200 @@
+scenario_id: S11_basic_control_scene1_5km
+category: basic_control
+version: v0.3-pdf-scene1-no-voice-multi-turn-80-30
+description: PDF 场景1基础操控工况；晴天白天城市主干道净空 5km，完成 route 上全部真实路口左/右转、左变道、提速80、减速30，正常车速约50；支持离线语音匹配与固定窗口显示，车辆控制仍由场景控制器执行。
+runtime:
+  random_seed: 42
+  carla_version: 0.9.10.1
+  fixed_delta_seconds: 0.05
+  max_duration_seconds: 900
+  post_success_hold_seconds: 5.0
+  background_vehicles: 0
+map:
+  town: Town05
+  weather: ClearNoon
+traffic_conditions:
+  traffic_lights:
+    mode: preserve
+    agent_responsibility: obey_red_lights_and_stop_when_needed
+    scenario_layer_responsibility: preserve_or_configure_and_record_infractions
+    configurable_modes:
+    - preserve
+    - freeze_all
+    - set_all_state
+ego:
+  vehicle_type: vehicle.tesla.model3
+  spawn_point:
+    x: 1.04
+    y: -87.89
+    z: 0.3
+    yaw: 0.1
+route:
+  lateral_offset_profile:
+  - progress_start_m: 450.0
+    progress_end_m: 650.0
+    from_offset_m: 0.0
+    to_offset_m: -3.5
+    hold_after: true
+  source_mode: carla_lane_trace
+  source_lane_trace:
+    align_spawn_to_lane: true
+    start:
+      x: 1.04
+      y: -87.89
+      z: 0.3
+    step_m: 2.0
+    target_length_m: 5200.0
+    max_steps: 3500
+    junction_decisions:
+    - left
+    - straight
+    - right
+    - straight
+    - straight
+    - left
+    - straight
+    - right
+  route_file: routes/S11_basic_control_scene1_5km.xml
+  route_id: S11_basic_control_scene1_5km
+controller:
+  initial_target_speed_kmh: 50.0
+  cruise_target_speed_kmh: 50.0
+  lookahead_m: 12.0
+  turn_lookahead_m: 7.0
+  lane_change_lookahead_m: 10.0
+  steer_gain: 1.25
+  turn_steer_gain: 1.55
+  lane_change_steer_gain: 1.25
+  max_steer: 0.46
+  turn_max_steer: 0.42
+  lane_change_max_steer: 0.38
+  target_point_smoothing:
+    window_radius_m: 8.0
+    turn_window_radius_m: 5.0
+    sample_step_m: 2.0
+    sigma_m: 4.0
+    turn_sigma_m: 2.5
+    tangent_delta_m: 2.0
+  speed_target_ramp:
+    accelerate_rate_kmh_per_s: 16.0
+    decelerate_rate_kmh_per_s: 4.5
+evaluation:
+  route_corridor_half_width_m: 8.0
+  red_light_lane_tolerance_m: 6.0
+actors:
+  vehicles: []
+  pedestrians: []
+  static_props: []
+instructions:
+- id: cmd_scene1_no_voice
+  trigger:
+    type: time
+    value: 0.0
+  text_zh: PDF场景1基础操控：保持车道完成5公里连续驾驶，完成路线上的全部真实路口左转和右转，向左变道，正常车速约50公里每小时，后段提速至80公里每小时，随后减速至30公里每小时。可叠加离线语音匹配显示。
+  text_en: 'PDF scene 1 basic control: complete 5km, take all real route left/right
+    turns, change left lane, cruise around 50 km/h, accelerate to 80 km/h, then slow
+    down to 30 km/h. Offline matched voice display can be enabled.'
+  intent:
+    type: basic_control_scene1
+    route_action: follow_route
+    voice_enabled: offline_overlay_optional
+  expected_subtasks:
+  - reach_target_speed_80
+  - complete_right_turn
+  - complete_left_turn
+  - complete_all_route_turns
+  - complete_lane_change_left
+  - reach_target_speed_30
+  - finish_5km_route
+action_windows:
+  auto_from_route:
+    enabled: true
+    min_turn_progress_m: 80.0
+    max_turn_progress_m: 5000.0
+    turn_scan_step_m: 8.0
+    turn_scan_span_m: 50.0
+    turn_threshold_deg: 35.0
+    turn_min_gap_m: 70.0
+    turn_window_half_width_m: 55.0
+    expected_heading_change_deg_min: 30.0
+    left_turn_target_speed_kmh: 30.0
+    right_turn_target_speed_kmh: 28.0
+    turn_direction_sequence:
+    - right
+    - left
+    - right
+    - left
+  accelerate_to_80:
+    enabled: true
+    progress_start_m: 1500.0
+    progress_end_m: 2500.0
+    target_speed_kmh: 80.0
+    control_target_speed_kmh: 95.0
+    min_reached_speed_kmh: 78.0
+    tolerance_kmh: 7.0
+    required_hold_seconds: 1.0
+    hold_until_reached: false
+  right_turn_1:
+    enabled: true
+    progress_start_m: 95.0
+    progress_end_m: 185.0
+    direction: right
+    target_speed_kmh: 28.0
+    expected_heading_change_deg_min: 35.0
+  left_turn_1:
+    enabled: true
+    progress_start_m: 185.0
+    progress_end_m: 305.0
+    direction: left
+    target_speed_kmh: 30.0
+    expected_heading_change_deg_min: 55.0
+  lane_change_left:
+    enabled: true
+    auto_after_right_turn: false
+    progress_start_m: 420.0
+    progress_end_m: 730.0
+    target_speed_kmh: 45.0
+    target_lateral_offset_m: 0.0
+    completion_lateral_offset_m: 0.8
+    required_hold_seconds: 1.0
+  slow_to_30:
+    enabled: true
+    auto_after_lane_change: false
+    progress_start_m: 2900.0
+    progress_end_m: 3500.0
+    target_speed_kmh: 30.0
+    tolerance_kmh: 4.0
+    required_hold_seconds: 2.0
+success_criteria:
+  no_collision: true
+  require_all_detected_turns: true
+  route_completion_min: 0.95
+  max_lane_invasion_count: 0
+  max_red_light_violation_count: 0
+  max_response_latency_ms: 150
+  required_subtasks:
+  - reach_target_speed_80
+  - complete_right_turn
+  - complete_left_turn
+  - complete_all_route_turns
+  - complete_lane_change_left
+  - reach_target_speed_30
+  long_route:
+    enabled: true
+    min_length_m: 5000.0
+    target_progress_m: 5000.0
+failure_criteria:
+  collision: true
+  route_deviation: true
+  lane_invasion: true
+  red_light_violation: true
+  blocked: true
+  timeout: true
+metrics:
+  required:
+  - route_completion
+  - collision_count
+  - lane_invasion_count
+  - red_light_violation_count
+  - target_speed_error
+  - subtask_completion_rate

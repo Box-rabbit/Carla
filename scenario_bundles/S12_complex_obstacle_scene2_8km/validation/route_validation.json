@@ -1,0 +1,79 @@
+{
+  "scenario_id": "S12_complex_obstacle_scene2_8km",
+  "route_id": "S12_complex_obstacle_scene2_8km",
+  "town": "Town05",
+  "carla_version": "0.9.10.1",
+  "validation_date": "2026-07-21",
+  "validation_passed": true,
+  "validation_note": "Dense route is a suffix of the CARLA-validated S12 Town05 lane_trace XML, trimmed to remove adjacent turn tasks closer than 100m near the original start.",
+  "source_mode": "route_xml_dense_validated_trimmed",
+  "raw_point_count": 4249,
+  "waypoint_count": 4249,
+  "interpolated_length_m": 8082.943,
+  "max_adjacent_gap_m": 2.386,
+  "mean_adjacent_gap_m": 1.903,
+  "min_adjacent_gap_m": 1.337,
+  "target_length_m": 8080.0,
+  "start_waypoint": {
+    "x": 151.307,
+    "y": 5.843,
+    "z": 0.5
+  },
+  "end_waypoint": {
+    "x": 189.219,
+    "y": 84.503,
+    "z": 0.5
+  },
+  "detected_turns": [
+    {
+      "progress_m": 99.0,
+      "direction": "left",
+      "heading_delta_deg": 25.2,
+      "x": 148.288,
+      "y": 104.399
+    },
+    {
+      "progress_m": 210.8,
+      "direction": "left",
+      "heading_delta_deg": 30.4,
+      "x": 50.214,
+      "y": 141.786
+    },
+    {
+      "progress_m": 536.0,
+      "direction": "left",
+      "heading_delta_deg": 31.4,
+      "x": 39.016,
+      "y": -171.245
+    }
+  ],
+  "turn_task_min_gap_m": 111.8,
+  "turn_task_gaps_m": [
+    111.8,
+    325.2
+  ],
+  "trimmed_from_original_progress_m": 217.546,
+  "scenario_window_notes": {
+    "slow_vehicle_overtake": {
+      "progress_start_m": 800.0,
+      "anchor_progress_m": 800.0,
+      "progress_end_m": 980.0,
+      "activation_margin_m": 0.0,
+      "slowdown_detection_gap_m": 30.0,
+      "lane_change_trigger_gap_m": 15.0,
+      "lane_change_start_progress_m": 820.0,
+      "return_window_progress_m": [
+        900.0,
+        960.0
+      ],
+      "straight_window_basis": "Route heading analysis shows the 800-930m overtake core segment changes by about 1.33deg, so the slow-vehicle overtake is placed on a straight section.",
+      "slowdown_trigger_rule": "Ego enters follow_slow_vehicle slowdown only after the front progress gap to the slow vehicle is <= 30m.",
+      "lane_change_trigger_rule": "Ego starts the left lane change only when the front progress gap to the slow vehicle is <= 15m."
+    },
+    "bus_stop_caution": {
+      "progress_start_m": 1930.0,
+      "anchor_progress_m": 2000.0,
+      "progress_end_m": 2200.0
+    }
+  }
+}

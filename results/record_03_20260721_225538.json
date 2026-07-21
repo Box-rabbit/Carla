@@ -1,0 +1,34 @@
+{
+  "input_text": "前方公交站有行人上下车，注意减速到30公里每小时，确认安全后继续行驶。",
+  "corrected_text": "",
+  "normalized_text": "前方公交站有行人上下车 注意减速到30公里每小时 确认安全后继续行驶",
+  "primary_intent": "BUS_STOP_CAUTION",
+  "confidence": 0.8,
+  "all_intents": [
+    "BUS_STOP_CAUTION",
+    "PEDESTRIAN_CAUTION",
+    "SLOW_DOWN"
+  ],
+  "has_compound": true,
+  "instruction": "Bus stop ahead, slow down, then be mindful of pedestrians ahead, then slow down now.",
+  "speed_values": [
+    {
+      "value": 30.0,
+      "unit": "km/h",
+      "raw": "30 公里每小时"
+    }
+  ],
+  "needs_confirmation": false,
+  "low_confidence_intents": [],
+  "timing": {
+    "t_asr_ms": 168.313,
+    "t_parse_ms": 0.298,
+    "t_total_ms": 168.627
+  },
+  "metadata": {},
+  "asr_text": "前方公交站有行人上下车，注意减速到30公里每小时，确认安全后继续行驶。",
+  "asr_char_accuracy": null,
+  "audio_path": "data\\results\\record_03_20260721_225538.wav",
+  "audio_duration_sec": 0.0,
+  "mode": "offline"
+}

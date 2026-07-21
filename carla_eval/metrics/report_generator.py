@@ -259,6 +259,9 @@ def infer_subtask_metrics(cfg, events):
         "slow_down": {"safe_slowdown_completed", "safe_speed_reached"},
         "detour_and_return": {"return_to_lane_completed"},
         "return_to_original_lane": {"return_to_lane_completed"},
+        "overtake_slow_vehicle": {"overtake_completed"},
+        "bus_stop_caution": {"bus_stop_pass_completed"},
+        "finish_8km_route": {"long_route_completed"},
         "emergency_brake": {"safe_brake_completed"},
         "safe_speed_control": {"safe_speed_reached"},
         "turn": {"turn_completed"},
@@ -638,6 +641,63 @@ def build_report(cfg, frames, events):
                 and left_turn is not None
                 and speed_30 is not None
                 and right_turn is not None
+                and long_route is not None
+                and success
+            ),
+        })
+
+    scene2_cfg = cfg.get("success_criteria", {}).get("complex_scene2", {})
+    if scene2_cfg.get("enabled", False):
+        ped_detected = find_event(events, "pedestrian_detected")
+        ped_slowdown = find_event(events, "slowdown_started")
+        ped_done = find_event(events, "safe_slowdown_completed")
+        slow_vehicle = find_event(events, "slow_vehicle_detected")
+        lane_change = find_event(events, "lane_change_started")
+        overtake = find_event(events, "overtake_completed")
+        return_lane = find_event(events, "return_to_lane_completed")
+        bus_detected = find_event(events, "bus_stop_detected")
+        bus_slowdown = find_event(events, "bus_stop_slowdown_started")
+        bus_done = find_event(events, "bus_stop_pass_completed")
+        long_route = find_event(events, "long_route_completed")
+
+        report.update({
+            "pedestrian_detected": ped_detected is not None,
+            "pedestrian_detected_time_s": ped_detected.get("timestamp") if ped_detected else None,
+            "slowdown_started": ped_slowdown is not None,
+            "slowdown_started_time_s": ped_slowdown.get("timestamp") if ped_slowdown else None,
+            "slowdown_response_time_s": ped_slowdown.get("response_time_s") if ped_slowdown else None,
+            "safe_slowdown_completed": ped_done is not None,
+            "safe_slowdown_completed_time_s": ped_done.get("timestamp") if ped_done else None,
+            "min_distance_to_pedestrian": ped_done.get("min_distance_to_pedestrian") if ped_done else None,
+            "ego_speed_at_slowdown_completion_kmh": ped_done.get("ego_speed_kmh") if ped_done else None,
+            "slow_vehicle_detected": slow_vehicle is not None,
+            "slow_vehicle_detected_time_s": slow_vehicle.get("timestamp") if slow_vehicle else None,
+            "lane_change_started": lane_change is not None,
+            "lane_change_started_time_s": lane_change.get("timestamp") if lane_change else None,
+            "lane_change_response_time_s": lane_change.get("response_time_s") if lane_change else None,
+            "overtake_completed": overtake is not None,
+            "overtake_completed_time_s": overtake.get("timestamp") if overtake else None,
+            "min_front_vehicle_gap_m": overtake.get("min_front_vehicle_gap_m") if overtake else None,
+            "return_to_lane_completed": return_lane is not None,
+            "return_to_lane_completed_time_s": return_lane.get("timestamp") if return_lane else None,
+            "return_hold_time_s": return_lane.get("return_hold_time") if return_lane else None,
+            "bus_stop_detected": bus_detected is not None,
+            "bus_stop_detected_time_s": bus_detected.get("timestamp") if bus_detected else None,
+            "bus_stop_slowdown_started": bus_slowdown is not None,
+            "bus_stop_slowdown_started_time_s": bus_slowdown.get("timestamp") if bus_slowdown else None,
+            "bus_stop_response_time_s": bus_slowdown.get("response_time_s") if bus_slowdown else None,
+            "bus_stop_pass_completed": bus_done is not None,
+            "bus_stop_pass_completed_time_s": bus_done.get("timestamp") if bus_done else None,
+            "ego_speed_at_bus_stop_completion_kmh": bus_done.get("ego_speed_kmh") if bus_done else None,
+            "long_route_completed": long_route is not None,
+            "long_route_completed_time_s": long_route.get("timestamp") if long_route else None,
+            "required_route_progress_m": scene2_cfg.get("target_progress_m"),
+            "long_route_progress_m": long_route.get("max_route_progress_m") if long_route else None,
+            "complex_scene2_success": (
+                ped_done is not None
+                and overtake is not None
+                and return_lane is not None
+                and bus_done is not None
                 and long_route is not None
                 and success
             ),
