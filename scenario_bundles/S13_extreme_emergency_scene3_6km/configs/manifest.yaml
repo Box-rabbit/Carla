@@ -1,0 +1,29 @@
+scenario_id: S13_extreme_emergency_scene3_6km
+route_id: S13_extreme_emergency_scene3_6km
+town: Town05
+category: emergency_response
+carla_version: 0.9.10.1
+source:
+  routes_file: routes/dongfeng_benchmark.xml
+  annotations_file: configs/scenario_annotations/dongfeng_benchmark.yaml
+  scenario_config: configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml
+files:
+  route_xml: routes/S13_extreme_emergency_scene3_6km.xml
+  scenario_config: configs/S13_extreme_emergency_scene3_6km.yaml
+  annotations: configs/S13_extreme_emergency_scene3_6km.annotations.yaml
+  validation: validation/route_validation.json
+route:
+  source_mode: route_xml
+  exported_mode: route_xml_dense_validated_trimmed
+  waypoint_count: 3154
+  town: Town05
+  interpolated_length_m: 6001.732
+  max_adjacent_gap_m: 2.386
+  mean_adjacent_gap_m: 1.903
+  target_length_m: 6000.0
+  validation_passed: true
+annotations:
+  format: yaml
+notes:
+  - Dense route XML is a 6km trimmed prefix of the validated Town05 S12 long route.
+  - Scene tasks are front-loaded on straight segments to avoid overlapping turn and emergency maneuvers.

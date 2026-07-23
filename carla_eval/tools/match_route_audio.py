@@ -19,7 +19,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
-DEFAULT_RESULTS_DIR = Path("results")
+DEFAULT_RESULTS_DIR = Path("voice_results")
 DEFAULT_ROUTES = Path("routes/dongfeng_benchmark.xml")
 DEFAULT_SCENARIOS = Path("configs/scenario_annotations/dongfeng_benchmark.yaml")
 DEFAULT_OUTPUT = Path("configs/lmdrive/route_audio_matches.yaml")
@@ -122,15 +122,21 @@ def _load_annotations(path):
 
 
 def _audio_sort_key(path):
-    match = re.search(r"record_(\d+)", Path(path).name)
+    match = re.search(r"record_(\d+)_([0-9]{8})_([0-9]+)", Path(path).name)
     if match:
-        return int(match.group(1))
-    return Path(path).name
+        return (
+            0,
+            match.group(2),
+            int(match.group(1)),
+            match.group(3),
+            Path(path).name,
+        )
+    return (1, Path(path).as_posix())
 
 
 def _load_voice_results(results_dir):
     records = []
-    for json_path in sorted(Path(results_dir).glob("*.json"), key=_audio_sort_key):
+    for json_path in sorted(Path(results_dir).rglob("*.json"), key=_audio_sort_key):
         payload = _load_json(json_path)
         wav_path = json_path.with_suffix(".wav")
         if not wav_path.exists():
@@ -356,7 +362,7 @@ def _match_records(records, candidates, prefer_route_id=None, prefer_route_hard=
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="Match results/*.wav voice commands to route/scenario events."
+        description="Match voice_results/**/*.wav voice commands to route/scenario events."
     )
     parser.add_argument("--results-dir", default=str(DEFAULT_RESULTS_DIR))
     parser.add_argument("--routes", default=str(DEFAULT_ROUTES))

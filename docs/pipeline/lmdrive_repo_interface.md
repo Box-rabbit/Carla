@@ -46,7 +46,7 @@
 - 沿用现有 route XML 与 CARLA 场景 YAML；
 - 在 route-distance 条件满足时触发一次语音输入；
 - 调用 `Voice2LMDrive` 适配层得到 intents / target speed 上限；
-- 将 `results/*.wav` 和 `results/*.json` 中的离线语音记录匹配到 S11 route/action；
+- 将 `voice_results/**/*.wav` 和 `voice_results/**/*.json` 中的离线语音记录匹配到 S11/S12 route/action；
 - 在运行时按 `route_progress_m` 固定窗口显示当前触发语音；
 - 将输出写回当前 `frames.jsonl` 与离线报告。
 
@@ -442,7 +442,7 @@ CARLA VehicleControl
 当前 S11 语音链路是离线模式：
 
 ```text
-results/*.wav + results/*.json
+voice_results/**/*.wav + voice_results/**/*.json
     ↓
 carla_eval/tools/match_route_audio.py
     ↓

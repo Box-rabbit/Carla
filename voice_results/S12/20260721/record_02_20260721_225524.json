@@ -21,7 +21,7 @@
   "metadata": {},
   "asr_text": "前方有车减速避让后，向左边倒，超越慢车。",
   "asr_char_accuracy": null,
-  "audio_path": "data\\results\\record_02_20260721_225524.wav",
+  "audio_path": "data\\voice_results\\S12\\20260721\\record_02_20260721_225524.wav",
   "audio_duration_sec": 0.0,
   "mode": "offline"
 }

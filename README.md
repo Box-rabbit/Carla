@@ -72,7 +72,7 @@ configs/metrics/             指标输出 schema
 configs/taxonomy/            场景分类与核心指标分类
 routes/                      route XML
 data/audio/                  语音输入 wav
-results/                     当前 5 条离线语音 wav/json 样例
+voice_results/               按场景归档的离线语音 wav/json 样例
 logs/                        场景运行日志输出
 reports/                     单场景评测报告与汇总表
 docs/scenario_design/        场景设计与 benchmark 映射

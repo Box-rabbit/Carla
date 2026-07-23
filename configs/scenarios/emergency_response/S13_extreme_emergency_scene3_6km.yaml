@@ -1,0 +1,283 @@
+scenario_id: S13_extreme_emergency_scene3_6km
+category: emergency_response
+version: v0.1-integrated-scene3-offline
+description: PDF 场景3极限应急语音操控工况；雨夜低能见度的 Town05 6km 连续驾驶，串联危险路况安全车速、突发车辆加塞应急制动、施工锥桶并道通过与临时横穿行人。
+runtime:
+  random_seed: 42
+  carla_version: 0.9.10.1
+  fixed_delta_seconds: 0.05
+  max_duration_seconds: 900
+  post_success_hold_seconds: 5.0
+  background_vehicles: 0
+map:
+  town: Town05
+  weather: CustomHardRainNight
+  weather_parameters:
+    cloudiness: 100.0
+    precipitation: 60.0
+    precipitation_deposits: 70.0
+    wetness: 85.0
+    wind_intensity: 45.0
+    fog_density: 12.0
+    fog_distance: 80.0
+    sun_altitude_angle: -14.0
+traffic_conditions:
+  traffic_lights:
+    mode: preserve
+    agent_responsibility: obey_red_lights_and_stop_when_needed
+    scenario_layer_responsibility: preserve_or_configure_and_record_infractions
+ego:
+  vehicle_type: vehicle.tesla.model3
+  spawn_point:
+    x: 151.307
+    y: 5.843
+    z: 0.3
+    yaw: 88.6
+route:
+  mode: route_xml
+  route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km.xml
+  route_id: S13_extreme_emergency_scene3_6km
+controller:
+  cruise_target_speed_kmh: 50.0
+  cruise_lookahead_m: 14.0
+  cruise_steer_gain: 1.2
+  cruise_max_steer: 0.34
+  target_point_window_radius_m: 8.0
+  target_point_sigma_m: 4.0
+  target_point_sample_step_m: 2.0
+  target_point_tangent_delta_m: 2.0
+  curvature_probe_delta_m: 4.0
+  curvature_lookahead_probe_m: 14.0
+  turn_detection_heading_delta_deg: 12.0
+  turn_lookahead_m: 7.0
+  turn_steer_gain: 1.6
+  turn_max_steer: 0.44
+  turn_target_speed_kmh: 26.0
+  turn_window_radius_m: 5.0
+  turn_sigma_m: 2.5
+  lateral_error_correction_gain: 1.0
+  lateral_error_correction_cap_m: 2.0
+  deviation_recovery_trigger_m: 1.0
+  deviation_recovery_lookahead_m: 6.5
+  deviation_recovery_steer_gain: 1.75
+  deviation_recovery_max_steer: 0.46
+  deviation_recovery_speed_kmh: 22.0
+  danger_lookahead_m: 12.0
+  construction_target_speed_kmh: 30.0
+  construction_lookahead_m: 12.0
+  construction_steer_gain: 1.28
+  construction_max_steer: 0.36
+  emergency_lookahead_m: 8.0
+  emergency_steer_gain: 1.25
+  emergency_max_steer: 0.28
+  safe_follow_speed_kmh: 25.0
+  worker_lookahead_m: 8.0
+  worker_steer_gain: 1.35
+  worker_max_steer: 0.32
+  finish_brake: 0.75
+  finish_steer_gain: 1.0
+  finish_max_steer: 0.2
+  max_throttle_cap: 0.8
+  large_steer_threshold: 0.3
+  large_steer_throttle_cap: 0.18
+evaluation:
+  route_corridor_half_width_m: 9.0
+  red_light_lane_tolerance_m: 6.0
+actors:
+  vehicles:
+  - id: cut_in_vehicle_001
+    stage: cut_in_vehicle
+    type: vehicle.audi.etron
+    fallback_filters:
+    - vehicle.audi.*
+    - vehicle.tesla.model3
+    - vehicle.*
+    progress_m: 900.0
+    lateral_offset_m: -3.5
+  pedestrians:
+  - id: construction_worker_001
+    stage: construction_worker
+    type: walker.pedestrian.0004
+    fallback_filter: walker.pedestrian.*
+    progress_m: 2045.0
+    lateral_offset_m: 2.3
+  static_props:
+  - id: construction_cone_001
+    stage: construction_cone_001
+    type: static.prop.trafficcone01
+    fallback_filters:
+    - static.prop.*cone*
+    - static.prop.*
+    progress_m: 2060.0
+    lateral_offset_m: 0.2
+  - id: construction_cone_002
+    stage: construction_cone_002
+    type: static.prop.trafficcone01
+    fallback_filters:
+    - static.prop.*cone*
+    - static.prop.*
+    progress_m: 2070.0
+    lateral_offset_m: 0.3
+  - id: construction_cone_003
+    stage: construction_cone_003
+    type: static.prop.trafficcone01
+    fallback_filters:
+    - static.prop.*cone*
+    - static.prop.*
+    progress_m: 2080.0
+    lateral_offset_m: 0.5
+  - id: construction_cone_004
+    stage: construction_cone_004
+    type: static.prop.trafficcone01
+    fallback_filters:
+    - static.prop.*cone*
+    - static.prop.*
+    progress_m: 2090.0
+    lateral_offset_m: 0.8
+  - id: construction_cone_005
+    stage: construction_cone_005
+    type: static.prop.trafficcone01
+    fallback_filters:
+    - static.prop.*cone*
+    - static.prop.*
+    progress_m: 2100.0
+    lateral_offset_m: 1.1
+  - id: construction_cone_006
+    stage: construction_cone_006
+    type: static.prop.trafficcone01
+    fallback_filters:
+    - static.prop.*cone*
+    - static.prop.*
+    progress_m: 2110.0
+    lateral_offset_m: 1.4
+  - id: construction_cone_007
+    stage: construction_cone_007
+    type: static.prop.trafficcone01
+    fallback_filters:
+    - static.prop.*cone*
+    - static.prop.*
+    progress_m: 2120.0
+    lateral_offset_m: 1.7
+  - id: construction_cone_008
+    stage: construction_cone_008
+    type: static.prop.trafficcone01
+    fallback_filters:
+    - static.prop.*cone*
+    - static.prop.*
+    progress_m: 2130.0
+    lateral_offset_m: 2.0
+instructions:
+- id: cmd_scene3_no_voice
+  trigger:
+    type: time
+    value: 0.0
+  text_zh: PDF场景3极限应急：突发车辆加塞时立即紧急避让，施工路段减速并道至左侧车道，并完成6公里连续驾驶。
+  text_en: 'PDF scene 3 extreme emergency: react immediately to a sudden cut-in,
+    slow down and merge left through construction,
+    and finish a 6km continuous drive.'
+  intent:
+    type: extreme_emergency_scene3
+    route_action: follow_route
+    voice_enabled: offline_overlay_optional
+  expected_subtasks:
+  - cut_in_emergency_brake
+  - construction_merge_left
+  - temporary_pedestrian_crossing
+  - finish_6km_route
+action_windows:
+  danger_zone:
+    enabled: false
+    activation_progress_m: 200.0
+    progress_start_m: 200.0
+    progress_end_m: 620.0
+    target_speed_kmh: 30.0
+  cut_in_emergency:
+    activation_progress_m: 760.0
+    anchor_progress_m: 860.0
+    npc_initial_progress_m: 900.0
+    npc_initial_lateral_offset_m: -3.5
+    npc_final_lateral_offset_m: 0.0
+    spawn_gap_m: 10.0
+    merge_delay_seconds: 0.6
+    merge_start_gap_m: 10.0
+    merge_duration_seconds: 2.8
+    merge_yaw_preview_seconds: 0.6
+    merge_target_gap_m: 10.0
+    npc_cruise_speed_kmh: 45.0
+    npc_merge_speed_kmh: 55.0
+    npc_post_merge_speed_kmh: 60.0
+    retire_after_ego_progress_m: 1250.0
+  construction_merge:
+    activation_progress_m: 2040.0
+    detection_progress_m: 2040.0
+    merge_start_progress_m: 2040.0
+    merge_duration_distance_m: 20.0
+    zone_end_progress_m: 2210.0
+    return_end_progress_m: 2280.0
+    additional_zones:
+    - activation_progress_m: 3467.0
+      detection_progress_m: 3467.0
+      merge_start_progress_m: 3467.0
+      merge_duration_distance_m: 20.0
+      zone_end_progress_m: 3637.0
+      return_end_progress_m: 3707.0
+    worker_activation_progress_m: 2060.0
+    worker_start_progress_m: 2045.0
+    worker_end_progress_m: 2140.0
+    worker_lateral_offset_m: 2.3
+    worker_speed_mps: 1.4
+    visibility_weather:
+      precipitation: 50.0
+      precipitation_deposits: 60.0
+      wetness: 75.0
+      wind_intensity: 35.0
+      fog_density: 8.0
+      fog_distance: 110.0
+      sun_altitude_angle: -12.0
+success_criteria:
+  no_collision: true
+  emergency_scene3:
+    enabled: true
+    hazard_score_threshold: 0.4
+    danger_safe_speed_kmh: 30.0
+    danger_required_hold_seconds: 2.0
+    cut_in_detection_distance_m: 70.0
+    cut_in_yield_speed_kmh: 25.0
+    cut_in_complete_lateral_tolerance_m: 0.8
+    emergency_brake_distance_m: 12.0
+    emergency_brake_ttc_s: 1.2
+    max_response_time_seconds: 0.12
+    safe_follow_distance_m: 16.0
+    safe_follow_speed_kmh: 25.0
+    safe_follow_hold_seconds: 0.8
+    merge_target_lateral_offset_m: -3.5
+    merge_lane_tolerance_m: 0.9
+    merge_required_hold_seconds: 0.8
+    cone_detour_trigger_distance_m: 20.0
+    cone_detour_lateral_detection_m: 6.5
+    cone_detour_merge_distance_m: 20.0
+    cone_detour_clear_distance_m: 65.0
+    cone_detour_return_distance_m: 45.0
+    worker_detection_distance_m: 30.0
+    worker_brake_distance_m: 30.0
+    worker_stop_distance_m: 30.0
+    worker_min_pass_speed_kmh: 20.0
+    return_lane_tolerance_m: 1.0
+    return_hold_seconds: 0.8
+    target_progress_m: 5950.0
+    target_route_completion: 0.99
+    max_response_latency_ms: 120
+failure_criteria:
+  collision: true
+  route_deviation: true
+  red_light_violation: true
+  lane_invasion: false
+  timeout: true
+  blocked: true
+metrics:
+  required:
+  - emergency_response_latency_ms
+  - collision_count
+  - min_ttc
+  - brake_reaction_success
+  - merge_success

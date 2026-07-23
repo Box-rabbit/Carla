@@ -8,6 +8,7 @@ from carla_eval.scenarios_impl import (
     ComplexObstacleScene2,
     ConeDetour,
     CutInBrake,
+    EmergencyResponseScene3,
     KeepLaneSpeed,
     LaneChange,
     PedestrianSlowdown,
@@ -25,6 +26,7 @@ _SCENARIO_CLASS_BY_ID: Dict[str, Type[BaseScenario]] = {
     "S08_rain_night_danger_slowdown": RainNightSlowdown,
     "S11_basic_control_scene1_5km": BasicControlScene1,
     "S12_complex_obstacle_scene2_8km": ComplexObstacleScene2,
+    "S13_extreme_emergency_scene3_6km": EmergencyResponseScene3,
 }
 
 _SCENARIO_CLASS_BY_TYPE: Dict[str, Type[BaseScenario]] = {
@@ -36,6 +38,7 @@ _SCENARIO_CLASS_BY_TYPE: Dict[str, Type[BaseScenario]] = {
     "RainNightSlowdown": RainNightSlowdown,
     "BasicControlScene1": BasicControlScene1,
     "ComplexObstacleScene2": ComplexObstacleScene2,
+    "EmergencyResponseScene3": EmergencyResponseScene3,
 }
 
 _DEFAULT_CONFIG_BY_ID: Dict[str, Path] = {
@@ -47,6 +50,7 @@ _DEFAULT_CONFIG_BY_ID: Dict[str, Path] = {
     "S08_rain_night_danger_slowdown": Path("configs/scenarios/emergency_response/S08_rain_night_danger_slowdown.yaml"),
     "S11_basic_control_scene1_5km": Path("configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml"),
     "S12_complex_obstacle_scene2_8km": Path("configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml"),
+    "S13_extreme_emergency_scene3_6km": Path("configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml"),
 }
 
 

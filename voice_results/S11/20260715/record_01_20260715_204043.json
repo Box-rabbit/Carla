@@ -26,7 +26,7 @@
   "metadata": {},
   "asr_text": "保持当前车道加速到80公里每小时。",
   "asr_char_accuracy": null,
-  "audio_path": "data\\results\\record_01_20260715_204043.wav",
+  "audio_path": "data\\voice_results\\S11\\20260715\\record_01_20260715_204043.wav",
   "audio_duration_sec": 0.0,
   "mode": "offline"
 }

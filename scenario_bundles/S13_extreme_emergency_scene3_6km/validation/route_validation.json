@@ -1,0 +1,18 @@
+{
+  "scenario_id": "S13_extreme_emergency_scene3_6km",
+  "route_id": "S13_extreme_emergency_scene3_6km",
+  "town": "Town05",
+  "category": "emergency_response",
+  "carla_version": "0.9.10.1",
+  "validation_passed": true,
+  "validation_note": "Dense route is a 6km trimmed prefix of the validated S12 Town05 route, reused for PDF scene-3 emergency integration.",
+  "route": {
+    "source_mode": "route_xml",
+    "exported_mode": "route_xml_dense_validated_trimmed",
+    "waypoint_count": 3154,
+    "interpolated_length_m": 6001.732,
+    "target_length_m": 6000.0,
+    "max_adjacent_gap_m": 2.386,
+    "mean_adjacent_gap_m": 1.903
+  }
+}

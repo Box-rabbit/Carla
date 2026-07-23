@@ -1,7 +1,7 @@
 {
-  "input_text": "前方有行人横穿马路，注意减速刹车。",
+  "input_text": "哎，注意前方有行人横穿马路，注意减速。",
   "corrected_text": "",
-  "normalized_text": "前方有行人横穿马路 注意减速刹车",
+  "normalized_text": "哎 注意前方有行人横穿马路 注意减速",
   "primary_intent": "PEDESTRIAN_CAUTION",
   "confidence": 0.8,
   "all_intents": [
@@ -14,14 +14,14 @@
   "needs_confirmation": false,
   "low_confidence_intents": [],
   "timing": {
-    "t_asr_ms": 98.706,
-    "t_parse_ms": 0.273,
-    "t_total_ms": 98.995
+    "t_asr_ms": 105.599,
+    "t_parse_ms": 0.238,
+    "t_total_ms": 105.851
   },
   "metadata": {},
-  "asr_text": "前方有行人横穿马路，注意减速刹车。",
+  "asr_text": "哎，注意前方有行人横穿马路，注意减速。",
   "asr_char_accuracy": null,
-  "audio_path": "data\\results\\record_01_20260721_225513.wav",
+  "audio_path": "data\\voice_results\\S11\\20260715\\record_03_20260715_204059.wav",
   "audio_duration_sec": 0.0,
   "mode": "offline"
 }

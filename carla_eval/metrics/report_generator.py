@@ -703,6 +703,85 @@ def build_report(cfg, frames, events):
             ),
         })
 
+    scene3_cfg = cfg.get("success_criteria", {}).get("emergency_scene3", {})
+    if scene3_cfg.get("enabled", False):
+        danger_detected = find_event(events, "danger_detected")
+        slowdown_started = find_event(events, "slowdown_started")
+        safe_speed = find_event(events, "safe_speed_reached")
+        cut_in_detected = find_event(events, "cut_in_detected")
+        emergency_brake = find_event(events, "emergency_brake_started")
+        safe_brake = find_event(events, "safe_brake_completed")
+        construction_detected = find_event(events, "construction_detected")
+        merge_started = find_event(events, "merge_started")
+        merge_completed = find_event(events, "merge_completed")
+        construction_pass = find_event(events, "construction_pass_completed")
+        worker_detected = find_event(events, "worker_detected")
+        long_route = find_event(events, "long_route_completed")
+
+        distances = [
+            float(record.get("front_vehicle_distance"))
+            for record in frames
+            if record.get("front_vehicle_distance") is not None
+        ]
+        ttcs = [
+            float(record.get("ttc_s"))
+            for record in frames
+            if record.get("ttc_s") is not None
+        ]
+
+        report.update({
+            "rain_night_danger_detected": danger_detected is not None,
+            "danger_detected_time_s": danger_detected.get("timestamp") if danger_detected else None,
+            "hazard_score": danger_detected.get("hazard_score") if danger_detected else None,
+            "slowdown_started": slowdown_started is not None,
+            "slowdown_started_time_s": slowdown_started.get("timestamp") if slowdown_started else None,
+            "slowdown_response_time_s": slowdown_started.get("response_time_s") if slowdown_started else None,
+            "safe_speed_reached": safe_speed is not None,
+            "safe_speed_reached_time_s": safe_speed.get("timestamp") if safe_speed else None,
+            "target_speed_limit_success": safe_speed is not None and success,
+            "cut_in_detected": cut_in_detected is not None,
+            "cut_in_detected_time_s": cut_in_detected.get("timestamp") if cut_in_detected else None,
+            "emergency_brake_started": emergency_brake is not None,
+            "emergency_brake_started_time_s": emergency_brake.get("timestamp") if emergency_brake else None,
+            "emergency_response_time_s": emergency_brake.get("response_time_s") if emergency_brake else None,
+            "emergency_response_latency_ms": (
+                float(emergency_brake.get("response_time_s")) * 1000.0
+                if emergency_brake and emergency_brake.get("response_time_s") is not None
+                else None
+            ),
+            "safe_brake_completed": safe_brake is not None,
+            "safe_brake_completed_time_s": safe_brake.get("timestamp") if safe_brake else None,
+            "brake_reaction_success": emergency_brake is not None and safe_brake is not None and success,
+            "min_front_vehicle_distance": (
+                safe_brake.get("min_front_vehicle_distance")
+                if safe_brake else (min(distances) if distances else None)
+            ),
+            "min_ttc": min(ttcs) if ttcs else None,
+            "construction_detected": construction_detected is not None,
+            "construction_detected_time_s": construction_detected.get("timestamp") if construction_detected else None,
+            "merge_started": merge_started is not None,
+            "merge_started_time_s": merge_started.get("timestamp") if merge_started else None,
+            "merge_completed": merge_completed is not None,
+            "merge_completed_time_s": merge_completed.get("timestamp") if merge_completed else None,
+            "construction_pass_completed": construction_pass is not None,
+            "construction_pass_completed_time_s": construction_pass.get("timestamp") if construction_pass else None,
+            "merge_success": merge_completed is not None and construction_pass is not None and success,
+            "worker_detected": worker_detected is not None,
+            "worker_detected_time_s": worker_detected.get("timestamp") if worker_detected else None,
+            "long_route_completed": long_route is not None,
+            "long_route_completed_time_s": long_route.get("timestamp") if long_route else None,
+            "long_route_progress_m": long_route.get("max_route_progress_m") if long_route else None,
+            "required_route_progress_m": scene3_cfg.get("target_progress_m"),
+            "extreme_scene3_success": (
+                safe_speed is not None
+                and safe_brake is not None
+                and merge_completed is not None
+                and construction_pass is not None
+                and long_route is not None
+                and success
+            ),
+        })
+
     return report
 
 

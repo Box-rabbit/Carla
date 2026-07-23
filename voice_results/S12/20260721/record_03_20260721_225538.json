@@ -28,7 +28,7 @@
   "metadata": {},
   "asr_text": "前方公交站有行人上下车，注意减速到30公里每小时，确认安全后继续行驶。",
   "asr_char_accuracy": null,
-  "audio_path": "data\\results\\record_03_20260721_225538.wav",
+  "audio_path": "data\\voice_results\\S12\\20260721\\record_03_20260721_225538.wav",
   "audio_duration_sec": 0.0,
   "mode": "offline"
 }

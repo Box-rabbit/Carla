@@ -18,7 +18,7 @@ matches:
     type: route_distance
     distance_m: 140.0
     input_mode: wav
-    audio_path: results/record_01_20260721_225513.wav
+    audio_path: voice_results/S12/20260721/record_01_20260721_225513.wav
   expected:
     intents:
     - PEDESTRIAN_CAUTION
@@ -31,8 +31,8 @@ matches:
     - SLOW_DOWN
   voice:
     audio_id: record_01_20260721_225513
-    json_path: results/record_01_20260721_225513.json
-    audio_path: results/record_01_20260721_225513.wav
+    json_path: voice_results/S12/20260721/record_01_20260721_225513.json
+    audio_path: voice_results/S12/20260721/record_01_20260721_225513.wav
     input_text: 前方有行人横穿马路，注意减速刹车。
     normalized_text: 前方有行人横穿马路 注意减速刹车
     instruction: Be mindful of pedestrians ahead, then slow down now.
@@ -42,7 +42,7 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: null
     confidence: 0.8
-    raw_audio_path: data\results\record_01_20260721_225513.wav
+    raw_audio_path: data\voice_results\S12\20260721\record_01_20260721_225513.wav
 - audio_id: record_02_20260721_225524
   status: matched
   match_score: 86
@@ -58,7 +58,7 @@ matches:
     type: route_distance
     distance_m: 760.0
     input_mode: wav
-    audio_path: results/record_02_20260721_225524.wav
+    audio_path: voice_results/S12/20260721/record_02_20260721_225524.wav
   expected:
     intents:
     - LANE_CHANGE_LEFT
@@ -71,8 +71,8 @@ matches:
     - SLOW_DOWN
   voice:
     audio_id: record_02_20260721_225524
-    json_path: results/record_02_20260721_225524.json
-    audio_path: results/record_02_20260721_225524.wav
+    json_path: voice_results/S12/20260721/record_02_20260721_225524.json
+    audio_path: voice_results/S12/20260721/record_02_20260721_225524.wav
     input_text: 前方有车减速避让后，向左边倒，超越慢车。
     normalized_text: 前方有车减速避让后 向左变道 超越慢车
     instruction: Change lane to the left, then slow down now.
@@ -82,7 +82,7 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: null
     confidence: 0.8
-    raw_audio_path: data\results\record_02_20260721_225524.wav
+    raw_audio_path: data\voice_results\S12\20260721\record_02_20260721_225524.wav
 - audio_id: record_03_20260721_225538
   status: matched
   match_score: 98
@@ -98,7 +98,7 @@ matches:
     type: route_distance
     distance_m: 1890.0
     input_mode: wav
-    audio_path: results/record_03_20260721_225538.wav
+    audio_path: voice_results/S12/20260721/record_03_20260721_225538.wav
   expected:
     intents:
     - BUS_STOP_CAUTION
@@ -113,8 +113,8 @@ matches:
     - SLOW_DOWN
   voice:
     audio_id: record_03_20260721_225538
-    json_path: results/record_03_20260721_225538.json
-    audio_path: results/record_03_20260721_225538.wav
+    json_path: voice_results/S12/20260721/record_03_20260721_225538.json
+    audio_path: voice_results/S12/20260721/record_03_20260721_225538.wav
     input_text: 前方公交站有行人上下车，注意减速到30公里每小时，确认安全后继续行驶。
     normalized_text: 前方公交站有行人上下车 注意减速到30公里每小时 确认安全后继续行驶
     instruction: Bus stop ahead, slow down, then be mindful of pedestrians ahead, then slow down now.
@@ -125,5 +125,5 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: 30.0
     confidence: 0.8
-    raw_audio_path: data\results\record_03_20260721_225538.wav
+    raw_audio_path: data\voice_results\S12\20260721\record_03_20260721_225538.wav
 voice_lead_distance_m: 40.0

@@ -130,3 +130,43 @@ available_scenarios:
               intents: [BUS_STOP_CAUTION, PEDESTRIAN_CAUTION, SLOW_DOWN, SLOW_DOWN_30]
               target_speed_kmh: 30
               no_collision: true
+      - scenario_id: S13_extreme_emergency_scene3_6km
+        route_id: S13_extreme_emergency_scene3_6km
+        scenario_type: EmergencyResponseScene3
+        config_path: configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml
+        available_event_configurations:
+          - trigger:
+              type: route_distance
+              distance_m: 0.0
+              input_mode: none
+            expected:
+              intents: [DANGEROUS_WEATHER, CUT_IN_CAUTION, EMERGENCY_BRAKE, CONSTRUCTION_MERGE_LEFT]
+              target_progress_m: 5950
+              no_collision: true
+          - event_id: dangerous_road_speed_control
+            trigger:
+              type: route_distance
+              distance_m: 260.0
+              input_mode: wav
+            expected:
+              intents: [DANGEROUS_WEATHER, SLOW_DOWN]
+              target_speed_kmh: 30
+              no_collision: true
+          - event_id: sudden_cut_in_emergency
+            trigger:
+              type: route_distance
+              distance_m: 760.0
+              input_mode: wav
+            expected:
+              intents: [CUT_IN_CAUTION, EMERGENCY_BRAKE]
+              max_response_latency_ms: 120
+              no_collision: true
+          - event_id: construction_merge_left
+            trigger:
+              type: route_distance
+              distance_m: 1950.0
+              input_mode: wav
+            expected:
+              intents: [CONSTRUCTION_MERGE_LEFT, SLOW_DOWN]
+              target_speed_kmh: 30
+              no_collision: true

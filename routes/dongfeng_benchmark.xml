@@ -63,4 +63,11 @@
     <waypoint x="44.200" y="-203.500" z="0.5" />
     <waypoint x="140.000" y="-203.500" z="0.5" />
   </route>
+
+  <route id="S13_extreme_emergency_scene3_6km" town="Town05" category="emergency_response">
+    <weather cloudiness="100" precipitation="78" sun_altitude_angle="-22" />
+    <!-- S13 follows a trimmed dense Town05 long route exported for PDF scene-3 emergency driving. -->
+    <waypoint x="151.307" y="5.843" z="0.5" />
+    <waypoint x="-214.027" y="-145.120" z="0.5" />
+  </route>
 </routes>

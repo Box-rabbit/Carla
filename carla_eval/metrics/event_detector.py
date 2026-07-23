@@ -824,6 +824,174 @@ def detect_complex_scene2(frames, cfg):
     return events
 
 
+def detect_emergency_scene3(frames, cfg):
+    events = []
+
+    scene_cfg = cfg.get("success_criteria", {}).get("emergency_scene3", {})
+    if not scene_cfg.get("enabled", False):
+        return events
+
+    danger_detected = first_true_frame(frames, "danger_detected")
+    slowdown_started = first_true_frame(frames, "slowdown_started")
+    safe_speed = first_true_frame(frames, "safe_speed_reached")
+    cut_in_detected = first_true_frame(frames, "cut_in_detected")
+    emergency_brake = first_true_frame(frames, "emergency_brake_started")
+    safe_brake = first_true_frame(frames, "safe_brake_completed")
+    construction_detected = first_true_frame(frames, "construction_detected")
+    merge_started = first_true_frame(frames, "merge_started")
+    merge_completed = first_true_frame(frames, "merge_completed")
+    construction_pass = first_true_frame(frames, "construction_pass_completed")
+    worker_detected = first_true_frame(frames, "worker_detected")
+    long_route = first_true_frame(frames, "long_route_completed")
+
+    distances = [
+        float(record.get("front_vehicle_distance"))
+        for record in frames
+        if record.get("front_vehicle_distance") is not None
+    ]
+    ttcs = [
+        float(record.get("ttc_s"))
+        for record in frames
+        if record.get("ttc_s") is not None
+    ]
+
+    if danger_detected is not None:
+        events.append({
+            "event": "danger_detected",
+            "timestamp": danger_detected.get("timestamp", 0.0),
+            "hazard_score": danger_detected.get("hazard_score"),
+            "hazard_score_threshold": scene_cfg.get("hazard_score_threshold"),
+            "weather_precipitation": danger_detected.get("weather_precipitation"),
+            "weather_wetness": danger_detected.get("weather_wetness"),
+            "weather_fog_density": danger_detected.get("weather_fog_density"),
+            "is_night": danger_detected.get("is_night"),
+            "sun_altitude_angle": danger_detected.get("sun_altitude_angle"),
+        })
+
+    if slowdown_started is not None:
+        response_time = None
+        if danger_detected is not None:
+            response_time = float(slowdown_started.get("timestamp", 0.0)) - float(danger_detected.get("timestamp", 0.0))
+        events.append({
+            "event": "slowdown_started",
+            "timestamp": slowdown_started.get("timestamp", 0.0),
+            "target_speed_kmh": slowdown_started.get("target_speed_kmh"),
+            "safe_speed_kmh": scene_cfg.get("danger_safe_speed_kmh"),
+            "response_time_s": response_time,
+        })
+
+    if safe_speed is not None:
+        events.append({
+            "event": "safe_speed_reached",
+            "timestamp": safe_speed.get("timestamp", 0.0),
+            "safe_speed_hold_time": safe_speed.get("safe_speed_hold_time"),
+            "required_safe_speed_hold_seconds": scene_cfg.get("danger_required_hold_seconds"),
+            "ego_speed_kmh": safe_speed.get("ego_speed_kmh"),
+        })
+
+    if cut_in_detected is not None:
+        events.append({
+            "event": "cut_in_detected",
+            "timestamp": cut_in_detected.get("timestamp", 0.0),
+            "front_vehicle_gap": cut_in_detected.get("front_vehicle_gap"),
+            "front_vehicle_distance": cut_in_detected.get("front_vehicle_distance"),
+            "front_vehicle_lateral_offset": cut_in_detected.get("front_vehicle_lateral_offset"),
+            "ttc_s": cut_in_detected.get("ttc_s"),
+        })
+
+    if emergency_brake is not None:
+        response_time = emergency_brake.get("emergency_response_time_s")
+        if response_time is None and cut_in_detected is not None:
+            response_time = float(emergency_brake.get("timestamp", 0.0)) - float(cut_in_detected.get("timestamp", 0.0))
+        events.append({
+            "event": "emergency_brake_started",
+            "timestamp": emergency_brake.get("timestamp", 0.0),
+            "front_vehicle_gap": emergency_brake.get("front_vehicle_gap"),
+            "front_vehicle_distance": emergency_brake.get("front_vehicle_distance"),
+            "ttc_s": emergency_brake.get("ttc_s"),
+            "response_time_s": response_time,
+            "max_response_time_seconds": scene_cfg.get("max_response_time_seconds"),
+        })
+
+    if safe_brake is not None:
+        events.append({
+            "event": "safe_brake_completed",
+            "timestamp": safe_brake.get("timestamp", 0.0),
+            "safe_follow_hold_time": safe_brake.get("safe_follow_hold_time"),
+            "required_safe_follow_seconds": scene_cfg.get("safe_follow_hold_seconds"),
+            "min_front_vehicle_distance": safe_brake.get("min_front_vehicle_distance"),
+            "safe_follow_distance_m": scene_cfg.get("safe_follow_distance_m"),
+            "safe_speed_kmh": scene_cfg.get("safe_follow_speed_kmh"),
+        })
+
+    if construction_detected is not None:
+        events.append({
+            "event": "construction_detected",
+            "timestamp": construction_detected.get("timestamp", 0.0),
+            "distance_to_construction": construction_detected.get("distance_to_construction"),
+        })
+
+    if merge_started is not None:
+        events.append({
+            "event": "merge_started",
+            "timestamp": merge_started.get("timestamp", 0.0),
+            "target_lateral_offset_m": scene_cfg.get("merge_target_lateral_offset_m"),
+        })
+
+    if merge_completed is not None:
+        events.append({
+            "event": "merge_completed",
+            "timestamp": merge_completed.get("timestamp", 0.0),
+            "merge_hold_time": merge_completed.get("merge_hold_time"),
+            "required_merge_hold_seconds": scene_cfg.get("merge_required_hold_seconds"),
+        })
+
+    if worker_detected is not None:
+        events.append({
+            "event": "worker_detected",
+            "timestamp": worker_detected.get("timestamp", 0.0),
+            "worker_distance_m": worker_detected.get("worker_distance_m"),
+        })
+
+    if construction_pass is not None:
+        events.append({
+            "event": "construction_pass_completed",
+            "timestamp": construction_pass.get("timestamp", 0.0),
+            "construction_return_hold_time": construction_pass.get("construction_return_hold_time"),
+            "required_return_hold_seconds": scene_cfg.get("return_hold_seconds"),
+        })
+
+    if long_route is not None:
+        events.append({
+            "event": "long_route_completed",
+            "timestamp": long_route.get("timestamp", 0.0),
+            "max_route_progress_m": long_route.get("max_route_progress_m"),
+            "target_progress_m": scene_cfg.get("target_progress_m"),
+            "route_completion": long_route.get("route_completion"),
+        })
+
+    if (
+        safe_speed is not None
+        and safe_brake is not None
+        and merge_completed is not None
+        and construction_pass is not None
+        and long_route is not None
+        and not has_collision(frames)
+    ):
+        events.append({
+            "event": "task_success",
+            "timestamp": max(
+                float(safe_speed.get("timestamp", 0.0)),
+                float(safe_brake.get("timestamp", 0.0)),
+                float(construction_pass.get("timestamp", 0.0)),
+                float(long_route.get("timestamp", 0.0)),
+            ),
+            "success": True,
+        })
+
+    return events
+
+
 def detect_task_failure(frames, events, cfg):
     route_deviation_frame = first_true_frame(frames, "route_deviation")
     if failure_enabled(cfg, "route_deviation", default=True) and route_deviation_frame is not None:
@@ -900,6 +1068,7 @@ def build_events(cfg, frames):
     events.extend(detect_rain_night_slowdown(frames, cfg))
     events.extend(detect_composite_long_route(frames, cfg))
     events.extend(detect_complex_scene2(frames, cfg))
+    events.extend(detect_emergency_scene3(frames, cfg))
     events = detect_task_failure(frames, events, cfg)
     return sorted(events, key=lambda event: (float(event.get("timestamp", 0.0)), event.get("event", "")))
 
