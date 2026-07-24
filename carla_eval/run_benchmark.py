@@ -3,14 +3,13 @@
 import argparse
 import json
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
+
+import yaml
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from carla_eval.agents import ScenarioControllerAgent
-from carla_eval.benchmark import DongfengRouteScenario, ScenarioAnnotationStore
-from carla_eval.utils.route_indexer import RouteIndexer
 
 
 DEFAULT_ROUTES = Path("routes/dongfeng_benchmark.xml")
@@ -41,11 +40,73 @@ def _parse_args(argv=None):
     return parser.parse_args(argv)
 
 
+def _load_list_annotations(path):
+    with Path(path).open("r", encoding="utf-8") as f:
+        data = json.load(f) if Path(path).suffix.lower() == ".json" else yaml.safe_load(f)
+
+    annotations = {}
+    for town_block in data.get("available_scenarios", []):
+        for town, scenario_list in town_block.items():
+            for item in scenario_list:
+                route_id = str(item.get("route_id", item.get("scenario_id", "")))
+                annotations[(str(town), route_id)] = {
+                    "scenario_id": str(item.get("scenario_id", route_id)),
+                    "scenario_type": str(item.get("scenario_type", "")),
+                    "config_path": str(item.get("config_path", "")),
+                }
+    return annotations
+
+
+def _list_routes(routes_file, scenarios_file, route_id=None):
+    annotations = _load_list_annotations(scenarios_file)
+    results = []
+    root = ET.parse(str(routes_file)).getroot()
+    for route in root.findall("route"):
+        current_id = str(route.get("id", ""))
+        if route_id is not None and current_id != str(route_id):
+            continue
+        town = str(route.get("town", "Town03"))
+        annotation = annotations.get((town, current_id))
+        if annotation is None:
+            annotation = next(
+                (
+                    value
+                    for (ann_town, ann_route_id), value in annotations.items()
+                    if ann_route_id == current_id
+                ),
+                None,
+            )
+        if annotation is None:
+            raise RuntimeError(
+                f"No scenario annotation for town={town}, route_id={current_id}"
+            )
+        results.append({
+            "route_id": current_id,
+            "town": town,
+            **annotation,
+        })
+    return results
+
+
 def main(argv=None):
     args = _parse_args(argv)
     routes_file = Path(args.routes)
     scenarios_file = Path(args.scenarios)
     checkpoint_path = Path(args.checkpoint)
+
+    if args.list:
+        print(json.dumps(
+            _list_routes(routes_file, scenarios_file, args.route_id),
+            indent=2,
+            ensure_ascii=False,
+        ))
+        return 0
+
+    # CARLA-dependent modules are imported only for an actual run. This keeps
+    # --list useful in offline environments and CI without the CARLA package.
+    from carla_eval.agents import ScenarioControllerAgent
+    from carla_eval.benchmark import DongfengRouteScenario, ScenarioAnnotationStore
+    from carla_eval.utils.route_indexer import RouteIndexer
 
     annotation_store = ScenarioAnnotationStore.from_file(scenarios_file)
     indexer = RouteIndexer(routes_file, scenarios_file, repetitions=args.repetitions)
@@ -75,16 +136,6 @@ def main(argv=None):
             f"type={annotation.scenario_type}"
         )
 
-        if args.list:
-            results.append({
-                "route_id": route_config.scenario_id,
-                "town": route_config.town,
-                "scenario_id": annotation.scenario_id,
-                "scenario_type": annotation.scenario_type,
-                "config_path": str(annotation.config_path),
-            })
-            continue
-
         agent = ScenarioControllerAgent()
         agent.setup({"mode": "scenario_controller"})
         result = route_scenario.run(
@@ -103,10 +154,6 @@ def main(argv=None):
         )
         results.append(result)
         indexer.save_state(checkpoint_path, extra_data={"last_result": result})
-
-    if args.list:
-        print(json.dumps(results, indent=2, ensure_ascii=False))
-        return 0
 
     success_count = sum(1 for item in results if item.get("success"))
     print(

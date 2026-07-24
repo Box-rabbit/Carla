@@ -1,0 +1,32 @@
+{
+  "input_text": "保持当前车道加速到80公里每小时。",
+  "corrected_text": "",
+  "normalized_text": "保持当前车道加速到80公里每小时",
+  "primary_intent": "GO_STRAIGHT",
+  "confidence": 0.8,
+  "all_intents": [
+    "GO_STRAIGHT"
+  ],
+  "has_compound": false,
+  "instruction": "Go straight ahead.",
+  "speed_values": [
+    {
+      "value": 80.0,
+      "unit": "km/h",
+      "raw": "80 公里每小时"
+    }
+  ],
+  "needs_confirmation": false,
+  "low_confidence_intents": [],
+  "timing": {
+    "t_asr_ms": 70.746,
+    "t_parse_ms": 0.298,
+    "t_total_ms": 71.063
+  },
+  "metadata": {},
+  "asr_text": "保持当前车道加速到80公里每小时。",
+  "asr_char_accuracy": null,
+  "audio_path": "data\\audio\\S11\\20260715\\record_01_20260715_204043.wav",
+  "audio_duration_sec": 0.0,
+  "mode": "offline"
+}

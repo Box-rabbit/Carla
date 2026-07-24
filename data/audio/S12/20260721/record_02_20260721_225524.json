@@ -1,0 +1,27 @@
+{
+  "input_text": "前方有车减速避让后，向左边倒，超越慢车。",
+  "corrected_text": "前方有车减速避让后，向左变道，超越慢车。",
+  "normalized_text": "前方有车减速避让后 向左变道 超越慢车",
+  "primary_intent": "LANE_CHANGE_LEFT",
+  "confidence": 0.8,
+  "all_intents": [
+    "LANE_CHANGE_LEFT",
+    "SLOW_DOWN"
+  ],
+  "has_compound": true,
+  "instruction": "Change lane to the left, then slow down now.",
+  "speed_values": [],
+  "needs_confirmation": false,
+  "low_confidence_intents": [],
+  "timing": {
+    "t_asr_ms": 133.574,
+    "t_parse_ms": 0.696,
+    "t_total_ms": 134.286
+  },
+  "metadata": {},
+  "asr_text": "前方有车减速避让后，向左边倒，超越慢车。",
+  "asr_char_accuracy": null,
+  "audio_path": "data\\audio\\S12\\20260721\\record_02_20260721_225524.wav",
+  "audio_duration_sec": 0.0,
+  "mode": "offline"
+}

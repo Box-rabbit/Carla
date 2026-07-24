@@ -1,0 +1,27 @@
+{
+  "input_text": "突发车辆加塞，紧急避让。",
+  "corrected_text": "",
+  "normalized_text": "突发车辆加塞 紧急避让",
+  "primary_intent": "CUT_IN_CAUTION",
+  "confidence": 1.0,
+  "all_intents": [
+    "CUT_IN_CAUTION",
+    "EMERGENCY_BRAKE"
+  ],
+  "has_compound": true,
+  "instruction": "Watch for cut-in vehicle ahead, then stop the car now.",
+  "speed_values": [],
+  "needs_confirmation": false,
+  "low_confidence_intents": [],
+  "timing": {
+    "t_asr_ms": 52.403,
+    "t_parse_ms": 0.392,
+    "t_total_ms": 52.809
+  },
+  "metadata": {},
+  "asr_text": "突发车辆加塞，紧急避让。",
+  "asr_char_accuracy": null,
+  "audio_path": "data\\audio\\S13\\20260722\\record_02_20260722_195220.wav",
+  "audio_duration_sec": 0.0,
+  "mode": "offline"
+}

@@ -1,7 +1,7 @@
 scenario_id: S13_extreme_emergency_scene3_6km
 category: emergency_response
 version: v0.1-integrated-scene3-offline
-description: PDF 场景3极限应急语音操控工况；雨夜低能见度的 Town05 6km 连续驾驶，串联危险路况安全车速、突发车辆加塞应急制动、施工锥桶并道通过与临时横穿行人。
+description: PDF 场景3极限应急语音操控工况；雨夜低能见度的 Town05 6km 连续驾驶，串联突发车辆加塞应急制动与施工锥桶并道通过。
 runtime:
   random_seed: 42
   carla_version: 0.9.10.1
@@ -37,6 +37,9 @@ route:
   mode: route_xml
   route_file: routes/S13_extreme_emergency_scene3_6km.xml
   route_id: S13_extreme_emergency_scene3_6km
+  design_route_file: routes/S13_extreme_emergency_scene3_6km.xml
+  lmdrive_route_file: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
+  lmdrive_route_id: S13_extreme_emergency_scene3_6km
 controller:
   cruise_target_speed_kmh: 50.0
   cruise_lookahead_m: 14.0
@@ -92,14 +95,14 @@ actors:
     - vehicle.audi.*
     - vehicle.tesla.model3
     - vehicle.*
-    progress_m: 900.0
+    progress_m: 1260.0
     lateral_offset_m: -3.5
   pedestrians:
   - id: construction_worker_001
     stage: construction_worker
     type: walker.pedestrian.0004
     fallback_filter: walker.pedestrian.*
-    progress_m: 2045.0
+    progress_m: 2545.0
     lateral_offset_m: 2.3
   static_props:
   - id: construction_cone_001
@@ -108,7 +111,7 @@ actors:
     fallback_filters:
     - static.prop.*cone*
     - static.prop.*
-    progress_m: 2060.0
+    progress_m: 2545.0
     lateral_offset_m: 0.2
   - id: construction_cone_002
     stage: construction_cone_002
@@ -116,7 +119,7 @@ actors:
     fallback_filters:
     - static.prop.*cone*
     - static.prop.*
-    progress_m: 2070.0
+    progress_m: 2555.0
     lateral_offset_m: 0.3
   - id: construction_cone_003
     stage: construction_cone_003
@@ -124,7 +127,7 @@ actors:
     fallback_filters:
     - static.prop.*cone*
     - static.prop.*
-    progress_m: 2080.0
+    progress_m: 2565.0
     lateral_offset_m: 0.5
   - id: construction_cone_004
     stage: construction_cone_004
@@ -132,7 +135,7 @@ actors:
     fallback_filters:
     - static.prop.*cone*
     - static.prop.*
-    progress_m: 2090.0
+    progress_m: 2575.0
     lateral_offset_m: 0.8
   - id: construction_cone_005
     stage: construction_cone_005
@@ -140,7 +143,7 @@ actors:
     fallback_filters:
     - static.prop.*cone*
     - static.prop.*
-    progress_m: 2100.0
+    progress_m: 2585.0
     lateral_offset_m: 1.1
   - id: construction_cone_006
     stage: construction_cone_006
@@ -148,7 +151,7 @@ actors:
     fallback_filters:
     - static.prop.*cone*
     - static.prop.*
-    progress_m: 2110.0
+    progress_m: 2595.0
     lateral_offset_m: 1.4
   - id: construction_cone_007
     stage: construction_cone_007
@@ -156,7 +159,7 @@ actors:
     fallback_filters:
     - static.prop.*cone*
     - static.prop.*
-    progress_m: 2120.0
+    progress_m: 2605.0
     lateral_offset_m: 1.7
   - id: construction_cone_008
     stage: construction_cone_008
@@ -164,7 +167,7 @@ actors:
     fallback_filters:
     - static.prop.*cone*
     - static.prop.*
-    progress_m: 2130.0
+    progress_m: 2615.0
     lateral_offset_m: 2.0
 instructions:
 - id: cmd_scene3_no_voice
@@ -182,7 +185,6 @@ instructions:
   expected_subtasks:
   - cut_in_emergency_brake
   - construction_merge_left
-  - temporary_pedestrian_crossing
   - finish_6km_route
 action_windows:
   danger_zone:
@@ -192,9 +194,9 @@ action_windows:
     progress_end_m: 620.0
     target_speed_kmh: 30.0
   cut_in_emergency:
-    activation_progress_m: 760.0
-    anchor_progress_m: 860.0
-    npc_initial_progress_m: 900.0
+    activation_progress_m: 1120.0
+    anchor_progress_m: 1220.0
+    npc_initial_progress_m: 1260.0
     npc_initial_lateral_offset_m: -3.5
     npc_final_lateral_offset_m: 0.0
     spawn_gap_m: 10.0
@@ -206,24 +208,18 @@ action_windows:
     npc_cruise_speed_kmh: 45.0
     npc_merge_speed_kmh: 55.0
     npc_post_merge_speed_kmh: 60.0
-    retire_after_ego_progress_m: 1250.0
+    retire_after_ego_progress_m: 1400.0
   construction_merge:
-    activation_progress_m: 2040.0
-    detection_progress_m: 2040.0
-    merge_start_progress_m: 2040.0
-    merge_duration_distance_m: 20.0
-    zone_end_progress_m: 2210.0
-    return_end_progress_m: 2280.0
-    additional_zones:
-    - activation_progress_m: 3467.0
-      detection_progress_m: 3467.0
-      merge_start_progress_m: 3467.0
-      merge_duration_distance_m: 20.0
-      zone_end_progress_m: 3637.0
-      return_end_progress_m: 3707.0
-    worker_activation_progress_m: 2060.0
-    worker_start_progress_m: 2045.0
-    worker_end_progress_m: 2140.0
+    activation_progress_m: 2480.0
+    detection_progress_m: 2480.0
+    merge_start_progress_m: 2520.0
+    merge_duration_distance_m: 35.0
+    zone_end_progress_m: 2650.0
+    return_end_progress_m: 2700.0
+    additional_zones: []
+    worker_activation_progress_m: 2490.0
+    worker_start_progress_m: 2545.0
+    worker_end_progress_m: 2630.0
     worker_lateral_offset_m: 2.3
     worker_speed_mps: 1.4
     visibility_weather:

@@ -27,5 +27,6 @@ route:
 annotations:
   format: json
 notes:
-- This scenario still uses runtime route generation in its source scenario YAML.
+- The source scenario YAML retains lane_trace parameters for the legacy CARLA
+  runner; standalone delivery uses the dense validated route XML listed above.
 - Dense route XML validated on CARLA Town05 and exported on 2026-07-20.

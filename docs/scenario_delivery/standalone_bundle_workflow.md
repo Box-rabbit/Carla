@@ -33,7 +33,7 @@ scenario_bundles/<scenario_id>/
 - `route.source_mode`
 - `route.source_lane_trace`
 
-这样既能直接作为独立包使用，也不会丢失原始生成参数。
+这样既能直接作为独立包使用，也不会丢失旧 runner 的原始生成参数。
 
 ## 导出命令
 
@@ -52,13 +52,16 @@ python carla_eval/tools/export_standalone_scenario_bundle.py \
 
 ## 对 lane-trace 场景的要求
 
-`S11`、`S12` 这类场景当前仍以场景 YAML 里的运行时 route 生成逻辑为真源。导出脚本会把共享 benchmark 中注册的 route 条目拆成单独 XML，并生成完整 bundle，但这还不等于“可直接外发的最终路线”。
+源场景 YAML 中的运行时 route 参数仍保留，用于兼容旧 CARLA runner；
+当前 `S11/S12/S13` 的独立 bundle 已经包含 CARLA 校验过的 dense route
+XML。对外交付时应使用 bundle 内的 route XML，而不是重新启用运行时 route
+生成。
 
-对外正式交付前，仍然应补齐：
+对外正式交付前仍应检查：
 
-- 与目标 CARLA 地图一致的稠密 route XML
-- GlobalRoutePlanner 插值校验结果
-- route 长度、关键转向、关键点验证结果
+- bundle 内 route XML 与目标 CARLA 地图一致
+- GlobalRoutePlanner 插值校验结果存在
+- route 长度、关键转向、关键点验证结果存在
 
 ## 约定
 
@@ -66,4 +69,5 @@ python carla_eval/tools/export_standalone_scenario_bundle.py \
 
 - 共享 benchmark 文件继续用于统一跑批
 - 每个场景都能通过导出脚本生成单独 bundle
-- 如果场景使用 `carla_lane_trace`，在完成真实地图验证后补一份独立 route XML
+- 如果新增场景使用 `carla_lane_trace`，在完成真实地图验证后补一份
+  dense route XML；已有 S11/S12/S13 不应再退回仅依赖运行时生成

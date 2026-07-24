@@ -15,6 +15,7 @@ available_scenarios:
         intents:
         - PEDESTRIAN_CAUTION
         - LANE_CHANGE_LEFT
+        - LANE_CHANGE_RIGHT
         - OVERTAKE
         - BUS_STOP_CAUTION
         target_progress_m: 8000
@@ -22,7 +23,7 @@ available_scenarios:
     - event_id: pedestrian_crossing
       trigger:
         type: route_distance
-        distance_m: 140.0
+        distance_m: 280.0
         input_mode: wav
       expected:
         intents:
@@ -33,20 +34,21 @@ available_scenarios:
     - event_id: slow_vehicle_overtake
       trigger:
         type: route_distance
-        distance_m: 760.0
+        distance_m: 1090.0
         input_mode: wav
       expected:
         intents:
         - LANE_CHANGE_LEFT
+        - LANE_CHANGE_RIGHT
         - OVERTAKE
         - SLOW_DOWN
         target_speed_kmh: 50
         no_collision: true
-    - event_id: bus_stop_caution
-      trigger:
-        type: route_distance
-        distance_m: 1890.0
-        input_mode: wav
+  - event_id: bus_stop_caution
+    trigger:
+      type: route_distance
+      distance_m: 1720.0
+      input_mode: wav
       expected:
         intents:
         - BUS_STOP_CAUTION

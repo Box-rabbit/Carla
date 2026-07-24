@@ -10,10 +10,13 @@ source:
   scenario_config: configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml
 files:
   route_xml: routes/S12_complex_obstacle_scene2_8km.xml
+  lmdrive_route_xml: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
   scenario_config: configs/S12_complex_obstacle_scene2_8km.yaml
   annotations: configs/S12_complex_obstacle_scene2_8km.annotations.yaml
   voice_matches: configs/route_audio_matches_S12_complex_obstacle_scene2_8km.yaml
+  route_action_alignment: configs/route_action_alignment_S12_complex_obstacle_scene2_8km.yaml
   validation: validation/route_validation.json
+  lmdrive_validation: validation/lmdrive_route_validation.json
 route:
   source_mode: route_xml
   exported_mode: route_xml_dense_validated_trimmed
@@ -31,3 +34,5 @@ notes:
 - Dense route XML is a validated Town05 route suffix trimmed to avoid adjacent
   turn tasks closer than 100m.
 - Detected turn-task gaps are 111.8m and 325.2m.
+- LMDrive delivery route encodes the overtake as CHANGELANELEFT followed by
+  CHANGELANERIGHT on a straight road segment.

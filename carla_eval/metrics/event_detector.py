@@ -830,6 +830,7 @@ def detect_emergency_scene3(frames, cfg):
     scene_cfg = cfg.get("success_criteria", {}).get("emergency_scene3", {})
     if not scene_cfg.get("enabled", False):
         return events
+    danger_enabled = bool(cfg.get("action_windows", {}).get("danger_zone", {}).get("enabled", True))
 
     danger_detected = first_true_frame(frames, "danger_detected")
     slowdown_started = first_true_frame(frames, "slowdown_started")
@@ -971,20 +972,21 @@ def detect_emergency_scene3(frames, cfg):
         })
 
     if (
-        safe_speed is not None
+        (not danger_enabled or safe_speed is not None)
         and safe_brake is not None
         and merge_completed is not None
         and construction_pass is not None
         and long_route is not None
         and not has_collision(frames)
     ):
+        completion_frames = [safe_brake, construction_pass, long_route]
+        if safe_speed is not None:
+            completion_frames.append(safe_speed)
         events.append({
             "event": "task_success",
             "timestamp": max(
-                float(safe_speed.get("timestamp", 0.0)),
-                float(safe_brake.get("timestamp", 0.0)),
-                float(construction_pass.get("timestamp", 0.0)),
-                float(long_route.get("timestamp", 0.0)),
+                float(frame.get("timestamp", 0.0))
+                for frame in completion_frames
             ),
             "success": True,
         })

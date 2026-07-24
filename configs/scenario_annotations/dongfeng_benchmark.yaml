@@ -100,13 +100,13 @@ available_scenarios:
               distance_m: 0.0
               input_mode: none
             expected:
-              intents: [PEDESTRIAN_CAUTION, LANE_CHANGE_LEFT, OVERTAKE, BUS_STOP_CAUTION]
+              intents: [PEDESTRIAN_CAUTION, LANE_CHANGE_LEFT, LANE_CHANGE_RIGHT, OVERTAKE, BUS_STOP_CAUTION]
               target_progress_m: 8000
               no_collision: true
           - event_id: pedestrian_crossing
             trigger:
               type: route_distance
-              distance_m: 140.0
+              distance_m: 280.0
               input_mode: wav
             expected:
               intents: [PEDESTRIAN_CAUTION, SLOW_DOWN]
@@ -115,16 +115,16 @@ available_scenarios:
           - event_id: slow_vehicle_overtake
             trigger:
               type: route_distance
-              distance_m: 760.0
+              distance_m: 1090.0
               input_mode: wav
             expected:
-              intents: [LANE_CHANGE_LEFT, OVERTAKE, SLOW_DOWN]
+              intents: [LANE_CHANGE_LEFT, LANE_CHANGE_RIGHT, OVERTAKE, SLOW_DOWN]
               target_speed_kmh: 50
               no_collision: true
           - event_id: bus_stop_caution
             trigger:
               type: route_distance
-              distance_m: 1890.0
+              distance_m: 1720.0
               input_mode: wav
             expected:
               intents: [BUS_STOP_CAUTION, PEDESTRIAN_CAUTION, SLOW_DOWN, SLOW_DOWN_30]
@@ -140,13 +140,13 @@ available_scenarios:
               distance_m: 0.0
               input_mode: none
             expected:
-              intents: [DANGEROUS_WEATHER, CUT_IN_CAUTION, EMERGENCY_BRAKE, CONSTRUCTION_MERGE_LEFT]
+              intents: [DANGEROUS_WEATHER, SLOW_DOWN, CUT_IN_CAUTION, EMERGENCY_BRAKE, CONSTRUCTION_MERGE_LEFT, LANE_CHANGE_RIGHT]
               target_progress_m: 5950
               no_collision: true
-          - event_id: dangerous_road_speed_control
+          - event_id: dangerous_road_safety_speed
             trigger:
               type: route_distance
-              distance_m: 260.0
+              distance_m: 0.0
               input_mode: wav
             expected:
               intents: [DANGEROUS_WEATHER, SLOW_DOWN]
@@ -155,7 +155,7 @@ available_scenarios:
           - event_id: sudden_cut_in_emergency
             trigger:
               type: route_distance
-              distance_m: 760.0
+              distance_m: 1080.0
               input_mode: wav
             expected:
               intents: [CUT_IN_CAUTION, EMERGENCY_BRAKE]
@@ -164,9 +164,9 @@ available_scenarios:
           - event_id: construction_merge_left
             trigger:
               type: route_distance
-              distance_m: 1950.0
+              distance_m: 2480.0
               input_mode: wav
             expected:
-              intents: [CONSTRUCTION_MERGE_LEFT, SLOW_DOWN]
+              intents: [CONSTRUCTION_MERGE_LEFT, LANE_CHANGE_LEFT, LANE_CHANGE_RIGHT, SLOW_DOWN]
               target_speed_kmh: 30
               no_collision: true

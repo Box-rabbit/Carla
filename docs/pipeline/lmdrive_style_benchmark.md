@@ -29,7 +29,8 @@ route XML
 
 - `routes/dongfeng_benchmark.xml`
   当前 7 个场景的总 route XML，route id 直接使用场景 id。
-  其中 S11 在 XML 中只注册 benchmark route id，真实长路线由场景 YAML 的 `route.lane_trace` 生成。
+  其中 S11/S12/S13 在仓库中均有独立的 dense route XML；总 route XML
+  负责统一注册 route id，旧场景 YAML 中保留的 `lane_trace` 仅用于兼容旧 runner。
 
 - `configs/scenario_annotations/dongfeng_benchmark.yaml`
   场景 annotation 文件，描述 route id 到场景实现、配置、触发条件、期望结果的映射。
@@ -93,5 +94,14 @@ python carla_eval/run_carla_s11_basic_control_scene1.py
 - 没有完整 ScenarioRunner behavior tree；
 - 背景交通仍由当前 `ScenarioEvaluator` 管理；
 - 当前 rule/controller 仍在 `scenarios_impl` 内，后续 LMDrive 接入时再替换为 `BaseAgent` adapter。
+
+长路线交付文件：
+
+- S11 使用 `routes/basic_control/S11_basic_control_scene1_5km.xml`
+- S12 使用 `routes/complex_obstacle/S12_complex_obstacle_scene2_8km_lmdrive.xml`
+- S13 使用 `routes/emergency_response/S13_extreme_emergency_scene3_6km_lmdrive.xml`
+
+这些 XML 是经过 CARLA 地图校验的交付路线；`routes/dongfeng_benchmark.xml`
+中的 S11/S12/S13 条目只承担共享 benchmark 注册，不是完整长路线。
 
 这个选择是为了保留当前东风场景的稳定性，同时把入口、route、scenario annotation 和 agent interface 逐步对齐 LMDrive。

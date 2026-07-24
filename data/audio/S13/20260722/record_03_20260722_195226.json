@@ -1,0 +1,28 @@
+{
+  "input_text": "施工路段减速并倒致左侧车道。",
+  "corrected_text": "施工路段减速并道至左侧车道。",
+  "normalized_text": "施工路段减速并道至左侧车道",
+  "primary_intent": "LANE_CHANGE_LEFT",
+  "confidence": 0.8,
+  "all_intents": [
+    "LANE_CHANGE_LEFT",
+    "AVOID_CONSTRUCTION",
+    "SLOW_DOWN"
+  ],
+  "has_compound": true,
+  "instruction": "Change lane to the left, then avoid the construction zone ahead, then slow down now.",
+  "speed_values": [],
+  "needs_confirmation": false,
+  "low_confidence_intents": [],
+  "timing": {
+    "t_asr_ms": 71.038,
+    "t_parse_ms": 0.594,
+    "t_total_ms": 71.648
+  },
+  "metadata": {},
+  "asr_text": "施工路段减速并倒致左侧车道。",
+  "asr_char_accuracy": null,
+  "audio_path": "data\\audio\\S13\\20260722\\record_03_20260722_195226.wav",
+  "audio_duration_sec": 0.0,
+  "mode": "offline"
+}

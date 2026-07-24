@@ -705,6 +705,7 @@ def build_report(cfg, frames, events):
 
     scene3_cfg = cfg.get("success_criteria", {}).get("emergency_scene3", {})
     if scene3_cfg.get("enabled", False):
+        danger_enabled = bool(cfg.get("action_windows", {}).get("danger_zone", {}).get("enabled", True))
         danger_detected = find_event(events, "danger_detected")
         slowdown_started = find_event(events, "slowdown_started")
         safe_speed = find_event(events, "safe_speed_reached")
@@ -738,7 +739,10 @@ def build_report(cfg, frames, events):
             "slowdown_response_time_s": slowdown_started.get("response_time_s") if slowdown_started else None,
             "safe_speed_reached": safe_speed is not None,
             "safe_speed_reached_time_s": safe_speed.get("timestamp") if safe_speed else None,
-            "target_speed_limit_success": safe_speed is not None and success,
+            "target_speed_limit_success": (
+                safe_speed is not None and success
+                if danger_enabled else None
+            ),
             "cut_in_detected": cut_in_detected is not None,
             "cut_in_detected_time_s": cut_in_detected.get("timestamp") if cut_in_detected else None,
             "emergency_brake_started": emergency_brake is not None,

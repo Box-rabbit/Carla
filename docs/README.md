@@ -3,18 +3,19 @@
 建议按下面顺序阅读：
 
 1. [../README.md](../README.md)
-2. [scenario_design/completed_scenarios_overview.md](scenario_design/completed_scenarios_overview.md)
-3. [scenario_design/benchmark_mapping.md](scenario_design/benchmark_mapping.md)
-4. [metrics/task7_metric_design.md](metrics/task7_metric_design.md)
-5. [pipeline/task0_lmdrive_pipeline_check.md](pipeline/task0_lmdrive_pipeline_check.md)
+2. [scenario_design/pdf_three_scenarios_delivery.md](scenario_design/pdf_three_scenarios_delivery.md)
+3. [pipeline/lmdrive_style_benchmark.md](pipeline/lmdrive_style_benchmark.md)
+4. [scenario_delivery/standalone_bundle_workflow.md](scenario_delivery/standalone_bundle_workflow.md)
+5. [../configs/README.md](../configs/README.md)
+6. [../routes/README.md](../routes/README.md)
 
 目录说明：
 
-- `scenario_design/`: 场景设计、benchmark 映射、每类场景说明
-- `metrics/`: 场景配置 schema、帧日志、事件检测、报告生成设计
+- `scenario_design/`: 三场景交付索引
+- `metrics/`: 运行时指标实现与 schema
 - `pipeline/`: LMDrive/Leaderboard 参考流程与接入边界
 
 阅读原则：
 
-- 当前真实实现优先以 `configs/scenarios/*.yaml`、`routes/*.xml` / YAML `route.lane_trace`、`carla_eval/` 代码为准。
-- `docs/*/task*.md` 中部分内容属于设计过程文档，可能早于当前实现。
+- 当前真实实现优先以 `configs/scenarios/*.yaml`、`routes/*.xml`、LMDrive 适配路线和 `carla_eval/` 代码为准。
+- 具体场景行为以 `configs/scenarios/` 和 `carla_eval/` 实现为准。

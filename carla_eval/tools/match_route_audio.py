@@ -19,11 +19,11 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
-DEFAULT_RESULTS_DIR = Path("voice_results")
+DEFAULT_RESULTS_DIR = Path("data/audio")
 DEFAULT_ROUTES = Path("routes/dongfeng_benchmark.xml")
 DEFAULT_SCENARIOS = Path("configs/scenario_annotations/dongfeng_benchmark.yaml")
 DEFAULT_OUTPUT = Path("configs/lmdrive/route_audio_matches.yaml")
-DEFAULT_PREFER_ROUTE = "S11_basic_control_scene1_5km"
+DEFAULT_PREFER_ROUTE = ""
 
 
 INTENT_ALIASES = {
@@ -38,6 +38,12 @@ INTENT_ALIASES = {
     "SLOW_DOWN": {"SLOW_DOWN", "SLOW_DOWN_30", "PEDESTRIAN_CAUTION"},
     "OVERTAKE": {"OVERTAKE", "LANE_CHANGE_LEFT", "CHANGE_LEFT"},
     "BUS_STOP_CAUTION": {"BUS_STOP_CAUTION", "PEDESTRIAN_CAUTION", "SLOW_DOWN", "SLOW_DOWN_30"},
+    "DANGEROUS_WEATHER": {"DANGEROUS_WEATHER", "SLOW_DOWN", "SLOW_DOWN_30"},
+    "CUT_IN_CAUTION": {"CUT_IN_CAUTION", "EMERGENCY_BRAKE", "SLOW_DOWN"},
+    "EMERGENCY_BRAKE": {"EMERGENCY_BRAKE", "CUT_IN_CAUTION", "SLOW_DOWN"},
+    "AVOID_CONSTRUCTION": {"AVOID_CONSTRUCTION", "CONSTRUCTION_MERGE_LEFT", "LANE_CHANGE_LEFT", "SLOW_DOWN"},
+    "CONSTRUCTION_MERGE_LEFT": {"CONSTRUCTION_MERGE_LEFT", "AVOID_CONSTRUCTION", "LANE_CHANGE_LEFT", "SLOW_DOWN"},
+    "LANE_CHANGE_RIGHT": {"LANE_CHANGE_RIGHT", "RETURN_TO_LANE"},
 }
 
 
@@ -57,6 +63,11 @@ ACTION_WINDOW_HINTS = {
     "bus_stop": {"BUS_STOP_CAUTION", "PEDESTRIAN_CAUTION", "SLOW_DOWN", "SLOW_DOWN_30"},
     "slow": {"SLOW_DOWN", "SLOW_DOWN_30"},
     "brake": {"SLOW_DOWN", "SLOW_DOWN_30", "EMERGENCY_BRAKE"},
+    "danger": {"DANGEROUS_WEATHER", "SLOW_DOWN", "SLOW_DOWN_30"},
+    "cut_in": {"CUT_IN_CAUTION", "EMERGENCY_BRAKE"},
+    "emergency": {"CUT_IN_CAUTION", "EMERGENCY_BRAKE", "SLOW_DOWN"},
+    "construction": {"AVOID_CONSTRUCTION", "CONSTRUCTION_MERGE_LEFT", "LANE_CHANGE_LEFT", "SLOW_DOWN"},
+    "merge_left": {"CONSTRUCTION_MERGE_LEFT", "LANE_CHANGE_LEFT", "SLOW_DOWN"},
 }
 
 
@@ -108,16 +119,17 @@ def _load_annotations(path):
         for town, scenario_list in town_block.items():
             for item in scenario_list:
                 event_cfgs = item.get("available_event_configurations", [])
-                event_cfg = event_cfgs[0] if event_cfgs else {}
-                annotations.append({
-                    "town": town,
-                    "scenario_id": str(item.get("scenario_id", item.get("route_id", ""))),
-                    "route_id": str(item.get("route_id", item.get("scenario_id", ""))),
-                    "scenario_type": str(item.get("scenario_type", "")),
-                    "config_path": item.get("config_path"),
-                    "trigger": event_cfg.get("trigger", item.get("trigger", {})),
-                    "expected": event_cfg.get("expected", item.get("expected", {})),
-                })
+                for event_cfg in (event_cfgs or [{}]):
+                    annotations.append({
+                        "town": town,
+                        "scenario_id": str(item.get("scenario_id", item.get("route_id", ""))),
+                        "route_id": str(item.get("route_id", item.get("scenario_id", ""))),
+                        "scenario_type": str(item.get("scenario_type", "")),
+                        "config_path": item.get("config_path"),
+                        "event_id": event_cfg.get("event_id"),
+                        "trigger": event_cfg.get("trigger", item.get("trigger", {})),
+                        "expected": event_cfg.get("expected", item.get("expected", {})),
+                    })
     return annotations
 
 
@@ -134,7 +146,16 @@ def _audio_sort_key(path):
     return (1, Path(path).as_posix())
 
 
-def _load_voice_results(results_dir):
+def _scenario_hint_from_path(path):
+    """Infer the intended scenario from a data/audio/S11/... directory."""
+    for part in Path(path).parts:
+        match = re.fullmatch(r"(S\d+)(?:_.*)?", part)
+        if match:
+            return match.group(1)
+    return None
+
+
+def _load_audio_results(results_dir):
     records = []
     for json_path in sorted(Path(results_dir).rglob("*.json"), key=_audio_sort_key):
         payload = _load_json(json_path)
@@ -159,6 +180,7 @@ def _load_voice_results(results_dir):
 
         records.append({
             "audio_id": json_path.stem,
+            "scenario_hint": _scenario_hint_from_path(json_path),
             "json_path": _repo_rel(json_path),
             "audio_path": _repo_rel(wav_path),
             "input_text": payload.get("input_text", ""),
@@ -211,14 +233,16 @@ def _build_event_candidates(annotations, routes, lead_distance_m):
             "scenario_id": ann["scenario_id"],
             "town": ann["town"],
             "scenario_type": ann["scenario_type"],
-            "event_id": ann["scenario_id"],
+            "event_id": ann.get("event_id") or ann["scenario_id"],
             "event_source": "scenario_annotation",
             "event_intents": sorted(expected_intents),
             "trigger": trigger,
             "expected": dict(ann.get("expected") or {}),
             "route_file": route.get("route_file"),
             "config_path": ann.get("config_path"),
-            "score_bias": 0,
+            # Explicit voice events are manually aligned and must win over
+            # distances inferred from generic action windows.
+            "score_bias": 40 if ann.get("event_id") else 0,
         })
 
         config_path = ann.get("config_path")
@@ -311,11 +335,22 @@ def _expected_for_record(record, candidate):
 
 def _match_records(records, candidates, prefer_route_id=None, prefer_route_hard=True):
     matches = []
-    used_audio_ids = set()
     for record in records:
         candidate_pool = candidates
+        scenario_hint = record.get("scenario_hint")
+        if scenario_hint:
+            hinted = [
+                item for item in candidates
+                if str(item.get("route_id", "")).startswith(f"{scenario_hint}_")
+            ]
+            if hinted:
+                candidate_pool = hinted
+
         if prefer_route_id and prefer_route_hard:
-            preferred = [item for item in candidates if item.get("route_id") == prefer_route_id]
+            preferred = [
+                item for item in candidate_pool
+                if item.get("route_id") == prefer_route_id
+            ]
             if preferred:
                 candidate_pool = preferred
 
@@ -356,13 +391,12 @@ def _match_records(records, candidates, prefer_route_id=None, prefer_route_hard=
             "expected": _expected_for_record(record, candidate),
             "voice": record,
         })
-        used_audio_ids.add(record["audio_id"])
     return matches
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="Match voice_results/**/*.wav voice commands to route/scenario events."
+        description="Match data/audio/**/*.wav voice commands to route/scenario events."
     )
     parser.add_argument("--results-dir", default=str(DEFAULT_RESULTS_DIR))
     parser.add_argument("--routes", default=str(DEFAULT_ROUTES))
@@ -372,8 +406,9 @@ def main(argv=None):
         "--prefer-route",
         default=DEFAULT_PREFER_ROUTE,
         help=(
-            "Route id used as tie-breaker when multiple routes contain the same action. "
-            "Use an empty string to disable."
+            "Optional route id used as a tie-breaker when multiple routes contain the "
+            "same action. Audio stored under data/audio/Sxx is always matched within "
+            "that scenario first. Use an empty string to disable."
         ),
     )
     parser.add_argument(
@@ -391,7 +426,7 @@ def main(argv=None):
 
     routes = _load_routes(Path(args.routes))
     annotations = _load_annotations(Path(args.scenarios))
-    records = _load_voice_results(Path(args.results_dir))
+    records = _load_audio_results(Path(args.results_dir))
     candidates = _build_event_candidates(annotations, routes, args.lead_distance_m)
     prefer_route = args.prefer_route or None
     matches = _match_records(
@@ -402,6 +437,10 @@ def main(argv=None):
     )
 
     output = {
+        "description": (
+            "Generated voice-match output. Do not edit manually; regenerate with "
+            "carla_eval/tools/match_route_audio.py after changing data/audio or annotations."
+        ),
         "generated_by": "carla_eval/tools/match_route_audio.py",
         "results_dir": _repo_rel(args.results_dir),
         "routes_file": _repo_rel(args.routes),

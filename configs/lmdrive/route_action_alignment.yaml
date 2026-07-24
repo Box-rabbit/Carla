@@ -1,0 +1,52 @@
+description: >-
+  Maintained voice-to-route alignment for S12 and S13. Voice controls are
+  longitudinal unless an explicit route action is encoded in the delivery XML.
+version: 1
+routes:
+  - scenario_id: S12_complex_obstacle_scene2_8km
+    delivery_route_file: routes/complex_obstacle/S12_complex_obstacle_scene2_8km_lmdrive.xml
+    actions:
+      - event_id: pedestrian_crossing
+        voice_trigger_progress_m: 280.0
+        scenario_action_start_progress_m: 300.0
+        scenario_anchor_progress_m: 360.0
+        route_action: LANEFOLLOW
+        control_scope: longitudinal_only
+      - event_id: slow_vehicle_overtake
+        voice_trigger_progress_m: 1090.0
+        scenario_action_start_progress_m: 1050.0
+        route_action_start_progress_m: 1130.0
+        route_action: CHANGELANELEFT
+        return_action_start_progress_m: 1210.0
+        return_action: CHANGELANERIGHT
+        control_scope: route_direction_plus_longitudinal_speed
+      - event_id: bus_stop_caution
+        voice_trigger_progress_m: 1720.0
+        scenario_action_start_progress_m: 1760.0
+        scenario_anchor_progress_m: 1850.0
+        route_action: LANEFOLLOW
+        control_scope: longitudinal_only
+  - scenario_id: S13_extreme_emergency_scene3_6km
+    delivery_route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km_lmdrive.xml
+    actions:
+      - event_id: dangerous_road_safety_speed
+        voice_trigger_progress_m: 0.0
+        scenario_action_start_progress_m: 0.0
+        route_action: LANEFOLLOW
+        control_scope: longitudinal_only
+        audio_status: matched
+      - event_id: sudden_cut_in_emergency
+        voice_trigger_progress_m: 1080.0
+        scenario_action_start_progress_m: 1120.0
+        route_action: LANEFOLLOW
+        control_scope: longitudinal_only
+        audio_status: matched
+      - event_id: construction_merge_left
+        voice_trigger_progress_m: 2480.0
+        scenario_action_start_progress_m: 2480.0
+        route_action_start_progress_m: 2520.0
+        route_action: CHANGELANELEFT
+        return_action_start_progress_m: 2650.0
+        return_action: CHANGELANERIGHT
+        control_scope: route_direction_plus_longitudinal_speed
+        audio_status: matched

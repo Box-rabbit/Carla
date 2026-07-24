@@ -1,0 +1,27 @@
+{
+  "input_text": "前方有行人横穿马路，注意减速刹车。",
+  "corrected_text": "",
+  "normalized_text": "前方有行人横穿马路 注意减速刹车",
+  "primary_intent": "PEDESTRIAN_CAUTION",
+  "confidence": 0.8,
+  "all_intents": [
+    "PEDESTRIAN_CAUTION",
+    "SLOW_DOWN"
+  ],
+  "has_compound": true,
+  "instruction": "Be mindful of pedestrians ahead, then slow down now.",
+  "speed_values": [],
+  "needs_confirmation": false,
+  "low_confidence_intents": [],
+  "timing": {
+    "t_asr_ms": 98.706,
+    "t_parse_ms": 0.273,
+    "t_total_ms": 98.995
+  },
+  "metadata": {},
+  "asr_text": "前方有行人横穿马路，注意减速刹车。",
+  "asr_char_accuracy": null,
+  "audio_path": "data\\audio\\S12\\20260721\\record_01_20260721_225513.wav",
+  "audio_duration_sec": 0.0,
+  "mode": "offline"
+}

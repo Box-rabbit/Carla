@@ -18,7 +18,7 @@ matches:
     type: route_distance
     distance_m: 1460.0
     input_mode: wav
-    audio_path: voice_results/S11/20260715/record_01_20260715_204043.wav
+    audio_path: data/audio/S11/20260715/record_01_20260715_204043.wav
   expected:
     intents:
     - ACCELERATE
@@ -32,8 +32,8 @@ matches:
     - GO_STRAIGHT
   voice:
     audio_id: record_01_20260715_204043
-    json_path: voice_results/S11/20260715/record_01_20260715_204043.json
-    audio_path: voice_results/S11/20260715/record_01_20260715_204043.wav
+    json_path: data/audio/S11/20260715/record_01_20260715_204043.json
+    audio_path: data/audio/S11/20260715/record_01_20260715_204043.wav
     input_text: 保持当前车道加速到80公里每小时。
     normalized_text: 保持当前车道加速到80公里每小时
     instruction: Go straight ahead.
@@ -42,7 +42,7 @@ matches:
     - GO_STRAIGHT
     target_speed_kmh: 80.0
     confidence: 0.8
-    raw_audio_path: data\voice_results\S11\20260715\record_01_20260715_204043.wav
+    raw_audio_path: data\audio\S11\20260715\record_01_20260715_204043.wav
 - audio_id: record_02_20260715_204051
   status: matched
   match_score: 60
@@ -58,7 +58,7 @@ matches:
     type: route_distance
     distance_m: 145.0
     input_mode: wav
-    audio_path: voice_results/S11/20260715/record_02_20260715_204051.wav
+    audio_path: data/audio/S11/20260715/record_02_20260715_204051.wav
   expected:
     intents:
     - LEFT_TURN
@@ -69,8 +69,8 @@ matches:
     - TURN_LEFT
   voice:
     audio_id: record_02_20260715_204051
-    json_path: voice_results/S11/20260715/record_02_20260715_204051.json
-    audio_path: voice_results/S11/20260715/record_02_20260715_204051.wav
+    json_path: data/audio/S11/20260715/record_02_20260715_204051.json
+    audio_path: data/audio/S11/20260715/record_02_20260715_204051.wav
     input_text: 注意前方向左转弯。
     normalized_text: 注意前方向左转弯
     instruction: Turn left ahead.
@@ -79,7 +79,7 @@ matches:
     - TURN_LEFT
     target_speed_kmh: null
     confidence: 0.8
-    raw_audio_path: data\voice_results\S11\20260715\record_02_20260715_204051.wav
+    raw_audio_path: data\audio\S11\20260715\record_02_20260715_204051.wav
 - audio_id: record_03_20260715_204059
   status: matched
   match_score: 56
@@ -95,7 +95,7 @@ matches:
     type: route_distance
     distance_m: 2860.0
     input_mode: wav
-    audio_path: voice_results/S11/20260715/record_03_20260715_204059.wav
+    audio_path: data/audio/S11/20260715/record_03_20260715_204059.wav
   expected:
     intents:
     - SLOW_DOWN
@@ -107,8 +107,8 @@ matches:
     - SLOW_DOWN
   voice:
     audio_id: record_03_20260715_204059
-    json_path: voice_results/S11/20260715/record_03_20260715_204059.json
-    audio_path: voice_results/S11/20260715/record_03_20260715_204059.wav
+    json_path: data/audio/S11/20260715/record_03_20260715_204059.json
+    audio_path: data/audio/S11/20260715/record_03_20260715_204059.wav
     input_text: 哎，注意前方有行人横穿马路，注意减速。
     normalized_text: 哎 注意前方有行人横穿马路 注意减速
     instruction: Be mindful of pedestrians ahead, then slow down now.
@@ -118,7 +118,7 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: null
     confidence: 0.8
-    raw_audio_path: data\voice_results\S11\20260715\record_03_20260715_204059.wav
+    raw_audio_path: data\audio\S11\20260715\record_03_20260715_204059.wav
 - audio_id: record_04_20260715_204105
   status: matched
   match_score: 60
@@ -134,7 +134,7 @@ matches:
     type: route_distance
     distance_m: 55.0
     input_mode: wav
-    audio_path: voice_results/S11/20260715/record_04_20260715_204105.wav
+    audio_path: data/audio/S11/20260715/record_04_20260715_204105.wav
   expected:
     intents:
     - RIGHT_TURN
@@ -145,8 +145,8 @@ matches:
     - TURN_RIGHT
   voice:
     audio_id: record_04_20260715_204105
-    json_path: voice_results/S11/20260715/record_04_20260715_204105.json
-    audio_path: voice_results/S11/20260715/record_04_20260715_204105.wav
+    json_path: data/audio/S11/20260715/record_04_20260715_204105.json
+    audio_path: data/audio/S11/20260715/record_04_20260715_204105.wav
     input_text: 向右转弯。
     normalized_text: 向右转弯
     instruction: Turn right ahead.
@@ -155,7 +155,7 @@ matches:
     - TURN_RIGHT
     target_speed_kmh: null
     confidence: 0.95
-    raw_audio_path: data\voice_results\S11\20260715\record_04_20260715_204105.wav
+    raw_audio_path: data\audio\S11\20260715\record_04_20260715_204105.wav
 - audio_id: record_05_20260715_204111
   status: matched
   match_score: 60
@@ -171,7 +171,7 @@ matches:
     type: route_distance
     distance_m: 380.0
     input_mode: wav
-    audio_path: voice_results/S11/20260715/record_05_20260715_204111.wav
+    audio_path: data/audio/S11/20260715/record_05_20260715_204111.wav
   expected:
     intents:
     - CHANGE_LEFT
@@ -182,8 +182,8 @@ matches:
     - LANE_CHANGE_LEFT
   voice:
     audio_id: record_05_20260715_204111
-    json_path: voice_results/S11/20260715/record_05_20260715_204111.json
-    audio_path: voice_results/S11/20260715/record_05_20260715_204111.wav
+    json_path: data/audio/S11/20260715/record_05_20260715_204111.json
+    audio_path: data/audio/S11/20260715/record_05_20260715_204111.wav
     input_text: 向左变道。
     normalized_text: 向左变道
     instruction: Change lane to the left.
@@ -192,5 +192,5 @@ matches:
     - LANE_CHANGE_LEFT
     target_speed_kmh: null
     confidence: 1.0
-    raw_audio_path: data\voice_results\S11\20260715\record_05_20260715_204111.wav
+    raw_audio_path: data\audio\S11\20260715\record_05_20260715_204111.wav
 voice_lead_distance_m: 40.0

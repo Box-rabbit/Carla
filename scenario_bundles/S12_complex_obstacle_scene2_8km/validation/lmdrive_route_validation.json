@@ -1,0 +1,29 @@
+{
+  "scenario_id": "S12_complex_obstacle_scene2_8km",
+  "route_variant": "lmdrive_adapted",
+  "source_route": "routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml",
+  "source_length_m": 8082.943,
+  "interpolated_length_m": 8079.689,
+  "waypoint_count": 819,
+  "max_adjacent_gap_m": 10.0,
+  "lane_changes": [
+    {
+      "id": "overtake_left",
+      "command": "CHANGELANELEFT",
+      "start_progress_m": 1130.0,
+      "end_progress_m": 1170.0,
+      "from_offset_m": 0.0,
+      "to_offset_m": -3.5
+    },
+    {
+      "id": "overtake_return_right",
+      "command": "CHANGELANERIGHT",
+      "start_progress_m": 1210.0,
+      "end_progress_m": 1255.0,
+      "from_offset_m": -3.5,
+      "to_offset_m": 0.0
+    }
+  ],
+  "validation_status": "offline_geometry_checked",
+  "carla_lane_validation": "pending_carla_python_0.9.10_environment"
+}

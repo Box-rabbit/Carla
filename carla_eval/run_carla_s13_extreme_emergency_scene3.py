@@ -29,6 +29,8 @@ def _parse_args(argv=None):
     p.add_argument("--draw-route-labels", action="store_true")
     p.add_argument("--draw-route-stride", type=int, default=8)
     p.add_argument("--draw-route-lifetime", type=float, default=900.0)
+    p.add_argument("--voice-overlay", action="store_true", help="Show matched voice command in a fixed screen window")
+    p.add_argument("--voice-match-config", default="configs/lmdrive/route_audio_matches.yaml")
     return p.parse_args(argv)
 
 
@@ -46,6 +48,8 @@ def main(argv=None):
         draw_route_stride=args.draw_route_stride,
         draw_route_lifetime=args.draw_route_lifetime,
         draw_route_labels=args.draw_route_labels,
+        voice_overlay=args.voice_overlay,
+        voice_match_config=args.voice_match_config,
     )
     print(result)
     return 0 if result.get("success") else 1

@@ -1,0 +1,23 @@
+scenario_id: S12_complex_obstacle_scene2_8km
+delivery_route_file: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
+actions:
+  - event_id: pedestrian_crossing
+    voice_trigger_progress_m: 280.0
+    scenario_action_start_progress_m: 300.0
+    scenario_anchor_progress_m: 360.0
+    route_action: LANEFOLLOW
+    control_scope: longitudinal_only
+  - event_id: slow_vehicle_overtake
+    voice_trigger_progress_m: 1090.0
+    scenario_action_start_progress_m: 1050.0
+    route_action_start_progress_m: 1130.0
+    route_action: CHANGELANELEFT
+    return_action_start_progress_m: 1210.0
+    return_action: CHANGELANERIGHT
+    control_scope: route_direction_plus_longitudinal_speed
+  - event_id: bus_stop_caution
+    voice_trigger_progress_m: 1720.0
+    scenario_action_start_progress_m: 1760.0
+    scenario_anchor_progress_m: 1850.0
+    route_action: LANEFOLLOW
+    control_scope: longitudinal_only

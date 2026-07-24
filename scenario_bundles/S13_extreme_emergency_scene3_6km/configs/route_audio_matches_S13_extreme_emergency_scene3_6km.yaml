@@ -1,0 +1,125 @@
+generated_from: configs/lmdrive/route_audio_matches.yaml
+scenario_annotations_file: configs/S13_extreme_emergency_scene3_6km.annotations.yaml
+prefer_route: S13_extreme_emergency_scene3_6km
+prefer_route_hard: true
+matches:
+- audio_id: record_01_20260722_195215
+  status: matched
+  match_score: 100
+  route_id: S13_extreme_emergency_scene3_6km
+  scenario_id: S13_extreme_emergency_scene3_6km
+  town: Town05
+  scenario_type: EmergencyResponseScene3
+  event_id: dangerous_road_safety_speed
+  event_source: scenario_annotation
+  route_file: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
+  scenario_config: configs/S13_extreme_emergency_scene3_6km.yaml
+  trigger:
+    type: route_distance
+    distance_m: 0.0
+    input_mode: wav
+    audio_path: data/audio/S13/20260722/record_01_20260722_195215.wav
+  expected:
+    intents:
+    - DANGEROUS_WEATHER
+    - SLOW_DOWN
+    no_collision: true
+    target_speed_kmh: 30.0
+    recognized_intents:
+    - SLOW_DOWN
+  voice:
+    audio_id: record_01_20260722_195215
+    json_path: data/audio/S13/20260722/record_01_20260722_195215.json
+    audio_path: data/audio/S13/20260722/record_01_20260722_195215.wav
+    input_text: 前方路况危险，保持安全车速。
+    normalized_text: 前方路况危险 保持安全车速
+    instruction: Slow down now.
+    primary_intent: SLOW_DOWN
+    recognized_intents:
+    - SLOW_DOWN
+    target_speed_kmh: null
+    confidence: 1.0
+    raw_audio_path: data\audio\S13\20260722\record_01_20260722_195215.wav
+- audio_id: record_02_20260722_195220
+  status: matched
+  match_score: 100
+  route_id: S13_extreme_emergency_scene3_6km
+  scenario_id: S13_extreme_emergency_scene3_6km
+  town: Town05
+  scenario_type: EmergencyResponseScene3
+  event_id: sudden_cut_in_emergency
+  event_source: scenario_annotation
+  route_file: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
+  scenario_config: configs/S13_extreme_emergency_scene3_6km.yaml
+  trigger:
+    type: route_distance
+    distance_m: 1080.0
+    input_mode: wav
+    audio_path: data/audio/S13/20260722/record_02_20260722_195220.wav
+  expected:
+    intents:
+    - CUT_IN_CAUTION
+    - EMERGENCY_BRAKE
+    max_response_latency_ms: 120
+    no_collision: true
+    recognized_intents:
+    - CUT_IN_CAUTION
+    - EMERGENCY_BRAKE
+  voice:
+    audio_id: record_02_20260722_195220
+    json_path: data/audio/S13/20260722/record_02_20260722_195220.json
+    audio_path: data/audio/S13/20260722/record_02_20260722_195220.wav
+    input_text: 突发车辆加塞，紧急避让。
+    normalized_text: 突发车辆加塞 紧急避让
+    instruction: Watch for cut-in vehicle ahead, then stop the car now.
+    primary_intent: CUT_IN_CAUTION
+    recognized_intents:
+    - CUT_IN_CAUTION
+    - EMERGENCY_BRAKE
+    target_speed_kmh: null
+    confidence: 1.0
+    raw_audio_path: data\audio\S13\20260722\record_02_20260722_195220.wav
+- audio_id: record_03_20260722_195226
+  status: matched
+  match_score: 100
+  route_id: S13_extreme_emergency_scene3_6km
+  scenario_id: S13_extreme_emergency_scene3_6km
+  town: Town05
+  scenario_type: EmergencyResponseScene3
+  event_id: construction_merge_left
+  event_source: scenario_annotation
+  route_file: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
+  scenario_config: configs/S13_extreme_emergency_scene3_6km.yaml
+  trigger:
+    type: route_distance
+    distance_m: 2480.0
+    input_mode: wav
+    audio_path: data/audio/S13/20260722/record_03_20260722_195226.wav
+  expected:
+    intents:
+    - CONSTRUCTION_MERGE_LEFT
+    - LANE_CHANGE_LEFT
+    - LANE_CHANGE_RIGHT
+    - SLOW_DOWN
+    no_collision: true
+    target_speed_kmh: 30.0
+    recognized_intents:
+    - LANE_CHANGE_LEFT
+    - AVOID_CONSTRUCTION
+    - SLOW_DOWN
+  voice:
+    audio_id: record_03_20260722_195226
+    json_path: data/audio/S13/20260722/record_03_20260722_195226.json
+    audio_path: data/audio/S13/20260722/record_03_20260722_195226.wav
+    input_text: 施工路段减速并倒致左侧车道。
+    normalized_text: 施工路段减速并道至左侧车道
+    instruction: Change lane to the left, then avoid the construction zone ahead, then slow down now.
+    primary_intent: LANE_CHANGE_LEFT
+    recognized_intents:
+    - LANE_CHANGE_LEFT
+    - AVOID_CONSTRUCTION
+    - SLOW_DOWN
+    target_speed_kmh: null
+    confidence: 0.8
+    raw_audio_path: data\audio\S13\20260722\record_03_20260722_195226.wav
+voice_lead_distance_m: 40.0

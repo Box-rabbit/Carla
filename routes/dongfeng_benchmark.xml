@@ -52,14 +52,14 @@
 
   <route id="S11_basic_control_scene1_5km" town="Town05" category="basic_control">
     <weather cloudiness="0" precipitation="0" sun_altitude_angle="70" />
-    <!-- S11 follows the PDF scene-1 lane_trace route generated from its scenario YAML. -->
+    <!-- Shared benchmark registration; full route: routes/basic_control/S11_basic_control_scene1_5km.xml. -->
     <waypoint x="44.200" y="-203.500" z="0.5" />
     <waypoint x="120.000" y="-203.500" z="0.5" />
   </route>
 
   <route id="S12_complex_obstacle_scene2_8km" town="Town05" category="complex_obstacle">
     <weather cloudiness="60" precipitation="0" sun_altitude_angle="15" />
-    <!-- S12 follows the PDF scene-2 lane_trace route generated from its scenario YAML. -->
+    <!-- Shared benchmark registration; full route: routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml. -->
     <waypoint x="44.200" y="-203.500" z="0.5" />
     <waypoint x="140.000" y="-203.500" z="0.5" />
   </route>

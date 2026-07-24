@@ -1,0 +1,29 @@
+{
+  "scenario_id": "S13_extreme_emergency_scene3_6km",
+  "route_variant": "lmdrive_adapted",
+  "source_route": "routes/emergency_response/S13_extreme_emergency_scene3_6km.xml",
+  "source_length_m": 6001.732,
+  "interpolated_length_m": 5998.922,
+  "waypoint_count": 611,
+  "max_adjacent_gap_m": 10.0,
+  "lane_changes": [
+    {
+      "id": "construction_merge_left",
+      "command": "CHANGELANELEFT",
+      "start_progress_m": 2520.0,
+      "end_progress_m": 2555.0,
+      "from_offset_m": 0.0,
+      "to_offset_m": -3.5
+    },
+    {
+      "id": "construction_return_right",
+      "command": "CHANGELANERIGHT",
+      "start_progress_m": 2650.0,
+      "end_progress_m": 2700.0,
+      "from_offset_m": -3.5,
+      "to_offset_m": 0.0
+    }
+  ],
+  "validation_status": "offline_geometry_checked",
+  "carla_lane_validation": "pending_carla_python_0.9.10_environment"
+}

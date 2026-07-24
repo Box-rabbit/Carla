@@ -630,7 +630,7 @@ class EmergencyResponseScene3(BaseScenario):
 
         cut_cfg = cfg.get("action_windows", {}).get("cut_in_emergency", {})
         ego_progress = float(obs["route_metrics"]["route_progress_m"])
-        activation_progress = float(cut_cfg.get("activation_progress_m", 760.0))
+        activation_progress = float(cut_cfg.get("activation_progress_m", 1120.0))
         merge_delay = float(cut_cfg.get("merge_delay_seconds", 1.2))
         cruise_speed = float(cut_cfg.get("npc_cruise_speed_kmh", 48.0))
         merge_speed = float(cut_cfg.get("npc_merge_speed_kmh", 42.0))

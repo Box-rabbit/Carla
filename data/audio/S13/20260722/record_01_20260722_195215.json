@@ -1,0 +1,26 @@
+{
+  "input_text": "前方路况危险，保持安全车速。",
+  "corrected_text": "",
+  "normalized_text": "前方路况危险 保持安全车速",
+  "primary_intent": "SLOW_DOWN",
+  "confidence": 1.0,
+  "all_intents": [
+    "SLOW_DOWN"
+  ],
+  "has_compound": false,
+  "instruction": "Slow down now.",
+  "speed_values": [],
+  "needs_confirmation": false,
+  "low_confidence_intents": [],
+  "timing": {
+    "t_asr_ms": 61.231,
+    "t_parse_ms": 0.56,
+    "t_total_ms": 61.807
+  },
+  "metadata": {},
+  "asr_text": "前方路况危险，保持安全车速。",
+  "asr_char_accuracy": null,
+  "audio_path": "data\\audio\\S13\\20260722\\record_01_20260722_195215.wav",
+  "audio_duration_sec": 0.0,
+  "mode": "offline"
+}

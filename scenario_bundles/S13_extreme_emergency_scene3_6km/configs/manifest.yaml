@@ -7,11 +7,16 @@ source:
   routes_file: routes/dongfeng_benchmark.xml
   annotations_file: configs/scenario_annotations/dongfeng_benchmark.yaml
   scenario_config: configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml
+  voice_matches_file: configs/lmdrive/route_audio_matches.yaml
 files:
   route_xml: routes/S13_extreme_emergency_scene3_6km.xml
+  lmdrive_route_xml: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
   scenario_config: configs/S13_extreme_emergency_scene3_6km.yaml
   annotations: configs/S13_extreme_emergency_scene3_6km.annotations.yaml
+  voice_matches: configs/route_audio_matches_S13_extreme_emergency_scene3_6km.yaml
+  route_action_alignment: configs/route_action_alignment_S13_extreme_emergency_scene3_6km.yaml
   validation: validation/route_validation.json
+  lmdrive_validation: validation/lmdrive_route_validation.json
 route:
   source_mode: route_xml
   exported_mode: route_xml_dense_validated_trimmed
@@ -26,4 +31,5 @@ annotations:
   format: yaml
 notes:
   - Dense route XML is a 6km trimmed prefix of the validated Town05 S12 long route.
-  - Scene tasks are front-loaded on straight segments to avoid overlapping turn and emergency maneuvers.
+  - Cut-in and the single construction merge are separated and located on straight route segments.
+  - LMDrive delivery route encodes the construction detour as CHANGELANELEFT followed by CHANGELANERIGHT.

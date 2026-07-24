@@ -51,6 +51,9 @@ route:
     - right
   route_file: routes/S12_complex_obstacle_scene2_8km.xml
   route_id: S12_complex_obstacle_scene2_8km
+  design_route_file: routes/S12_complex_obstacle_scene2_8km.xml
+  lmdrive_route_file: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
+  lmdrive_route_id: S12_complex_obstacle_scene2_8km
 controller:
   initial_target_speed_kmh: 50.0
   cruise_target_speed_kmh: 50.0
@@ -222,21 +225,21 @@ instructions:
   - finish_8km_route
 action_windows:
   pedestrian_crossing:
-    progress_start_m: 180.0
-    progress_end_m: 420.0
-    anchor_progress_m: 260.0
+    progress_start_m: 300.0
+    progress_end_m: 480.0
+    anchor_progress_m: 360.0
     start_lateral_offset_m: 4.5
     end_lateral_offset_m: -4.8
     cross_duration_seconds: 5.2
   slow_vehicle_overtake:
-    progress_start_m: 800.0
-    progress_end_m: 980.0
-    anchor_progress_m: 800.0
+    progress_start_m: 1050.0
+    progress_end_m: 1280.0
+    anchor_progress_m: 1050.0
     slow_vehicle_speed_kmh: 20.0
   bus_stop_caution:
-    progress_start_m: 1930.0
-    progress_end_m: 2200.0
-    anchor_progress_m: 2000.0
+    progress_start_m: 1760.0
+    progress_end_m: 1980.0
+    anchor_progress_m: 1850.0
     bus_lateral_offset_m: 4.8
     station_marker_lateral_offset_m: 7.0
     pedestrian_progress_offset_m: 5.0
@@ -268,10 +271,10 @@ success_criteria:
     follow_slow_vehicle_target_speed_kmh: 30.0
     follow_speed_margin_kmh: 4.0
     follow_brake_gap_m: 14.0
-    overtake_lane_change_start_progress_m: 820.0
-    overtake_left_lane_full_progress_m: 880.0
-    overtake_return_start_progress_m: 900.0
-    overtake_return_end_progress_m: 960.0
+    overtake_lane_change_start_progress_m: 1130.0
+    overtake_left_lane_full_progress_m: 1170.0
+    overtake_return_start_progress_m: 1210.0
+    overtake_return_end_progress_m: 1255.0
     overtake_target_speed_kmh: 50.0
     overtake_left_lateral_offset_m: -3.5
     overtake_left_lane_ready_offset_m: -2.6

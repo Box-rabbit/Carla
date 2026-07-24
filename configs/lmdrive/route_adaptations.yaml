@@ -1,0 +1,47 @@
+description: >-
+  Maintained input configuration for generating sparse LMDrive/Leaderboard
+  route XML files from validated dense route XML files.
+version: 1
+combined_route_source: routes/dongfeng_benchmark.xml
+combined_route_output: routes/dongfeng_lmdrive_benchmark.xml
+routes:
+  - scenario_id: S12_complex_obstacle_scene2_8km
+    category: complex_obstacle
+    source_xml: routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml
+    output_xml: routes/complex_obstacle/S12_complex_obstacle_scene2_8km_lmdrive.xml
+    bundle_output_xml: scenario_bundles/S12_complex_obstacle_scene2_8km/routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
+    validation_output: scenario_bundles/S12_complex_obstacle_scene2_8km/validation/lmdrive_route_validation.json
+    waypoint_spacing_m: 10.0
+    lane_changes:
+      - id: overtake_left
+        command: CHANGELANELEFT
+        start_progress_m: 1130.0
+        end_progress_m: 1170.0
+        from_offset_m: 0.0
+        to_offset_m: -3.5
+      - id: overtake_return_right
+        command: CHANGELANERIGHT
+        start_progress_m: 1210.0
+        end_progress_m: 1255.0
+        from_offset_m: -3.5
+        to_offset_m: 0.0
+  - scenario_id: S13_extreme_emergency_scene3_6km
+    category: emergency_response
+    source_xml: routes/emergency_response/S13_extreme_emergency_scene3_6km.xml
+    output_xml: routes/emergency_response/S13_extreme_emergency_scene3_6km_lmdrive.xml
+    bundle_output_xml: scenario_bundles/S13_extreme_emergency_scene3_6km/routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
+    validation_output: scenario_bundles/S13_extreme_emergency_scene3_6km/validation/lmdrive_route_validation.json
+    waypoint_spacing_m: 10.0
+    lane_changes:
+      - id: construction_merge_left
+        command: CHANGELANELEFT
+        start_progress_m: 2520.0
+        end_progress_m: 2555.0
+        from_offset_m: 0.0
+        to_offset_m: -3.5
+      - id: construction_return_right
+        command: CHANGELANERIGHT
+        start_progress_m: 2650.0
+        end_progress_m: 2700.0
+        from_offset_m: -3.5
+        to_offset_m: 0.0

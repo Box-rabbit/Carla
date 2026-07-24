@@ -205,14 +205,13 @@ def _build_manifest(
     notes = []
     if route_mode in {"carla_lane_trace", "carla_runtime_planner"}:
         notes.append(
-            "This scenario still uses runtime route generation in its source scenario YAML."
-        )
-        notes.append(
-            "The exported XML is a standalone route snapshot and should be replaced with a dense, validated route before external delivery."
+            "The source scenario YAML retains runtime route parameters for legacy "
+            "CARLA runner compatibility; the bundle uses the selected route XML."
         )
     if waypoint_count <= 2:
         notes.append(
-            "The exported route XML is sparse; validate it against CARLA GlobalRoutePlanner before using it as the only route source."
+            "The selected route XML is sparse; validate it against CARLA "
+            "GlobalRoutePlanner before using it as the only route source."
         )
 
     manifest: Dict[str, Any] = {
@@ -266,8 +265,14 @@ def export_bundle(
     route_id = str(annotation_item.get("route_id", annotation_item.get("scenario_id", scenario_id)))
     config_path = Path(annotation_item["config_path"])
     cfg = _load_structured_file(config_path)
-    route_elem = _find_route_element(routes_file, route_id)
-    category = _detect_category(config_path, cfg, route_elem)
+    registered_route_elem = _find_route_element(routes_file, route_id)
+    category = _detect_category(config_path, cfg, registered_route_elem)
+    route_elem = registered_route_elem
+    canonical_route_file = _candidate_route_file(category, scenario_id)
+    if canonical_route_file.exists():
+        canonical_route_elem = _find_route_element(canonical_route_file, route_id)
+        if len(canonical_route_elem.findall("waypoint")) > len(route_elem.findall("waypoint")):
+            route_elem = canonical_route_elem
 
     bundle_root = output_root / scenario_id
     config_out_dir = bundle_root / "configs"
@@ -329,7 +334,6 @@ def export_bundle(
     )
     _write_yaml(bundle_root / "configs/manifest.yaml", manifest)
 
-    canonical_route_file = _candidate_route_file(category, scenario_id)
     if not canonical_route_file.exists():
         canonical_route_file.parent.mkdir(parents=True, exist_ok=True)
         _write_xml_document(route_elem, canonical_route_file)

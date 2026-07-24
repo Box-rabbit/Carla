@@ -29,13 +29,13 @@
 
 1. `README.md`
 2. [docs/README.md](docs/README.md)
-3. [docs/scenario_design/completed_scenarios_overview.md](docs/scenario_design/completed_scenarios_overview.md)
+3. [docs/scenario_design/pdf_three_scenarios_delivery.md](docs/scenario_design/pdf_three_scenarios_delivery.md)
 4. [configs/README.md](configs/README.md)
 5. [routes/README.md](routes/README.md)
 
 ## 当前状态
 
-当前已完成 6 个稳定的 CARLA 闭环评测场景，并新增 2 个 PDF 长路线复合场景配置：
+当前已完成 6 个基础 CARLA 闭环评测场景，并完成 PDF 要求的 3 个 Town05 连续长路线标准化场景：
 
 - `S01_keep_lane_speed_60`
 - `S02_lane_change`
@@ -45,20 +45,22 @@
 - `S08_rain_night_danger_slowdown`
 - `S11_basic_control_scene1_5km`
 - `S12_complex_obstacle_scene2_8km`
+- `S13_extreme_emergency_scene3_6km`
 
-这些场景均满足以下基本要求：
+这些场景均有固定配置、路线和运行日志；已有闭环报告的场景另提供离线评测报告：
 
 - 固定随机种子
 - 固定 route
 - 固定 ego spawn 点
 - 固定 actor spawn / 触发逻辑
-- 有对应的日志与评测报告输出
+- 有对应的运行日志；已完成离线评测的场景另有报告输出
 
 场景总览见：
-- [docs/scenario_design/completed_scenarios_overview.md](docs/scenario_design/completed_scenarios_overview.md)
+- [docs/scenario_design/pdf_three_scenarios_delivery.md](docs/scenario_design/pdf_three_scenarios_delivery.md)
 
-benchmark 映射见：
-- [docs/scenario_design/benchmark_mapping.md](docs/scenario_design/benchmark_mapping.md)
+配置与路线说明见：
+- [configs/README.md](configs/README.md)
+- [routes/README.md](routes/README.md)
 
 ## 仓库结构
 
@@ -67,12 +69,10 @@ carla_eval/                  场景运行脚本、运行时检测、离线评测
 configs/scenarios/           场景配置唯一真源
 configs/scenario_annotations/ LMDrive-style 场景 annotation
 configs/lmdrive/             LMDrive / Voice2LMDrive 最小接入配置
-configs/scenarios_db/        场景索引数据库
 configs/metrics/             指标输出 schema
 configs/taxonomy/            场景分类与核心指标分类
 routes/                      route XML
-data/audio/                  语音输入 wav
-voice_results/               按场景归档的离线语音 wav/json 样例
+data/audio/                  按场景归档的离线语音 wav/json 样例
 logs/                        场景运行日志输出
 reports/                     单场景评测报告与汇总表
 docs/scenario_design/        场景设计与 benchmark 映射
@@ -83,7 +83,7 @@ docs/pipeline/               LMDrive / benchmark 调研与接入说明
 当前约定：
 
 - 场景真源：`configs/scenarios/*.yaml`
-- route 真源：短场景使用 `routes/*.xml`；`S11/S12` 长路线使用场景 YAML 中的 `route.mode: carla_lane_trace`
+- route 真源：短场景使用 `routes/*.xml`；`S11/S12/S13` 长路线均已导出 dense route XML，其中 `S12/S13` 另提供 LMDrive/Leaderboard 适配的稀疏 route XML
 
 ## 运行环境
 
@@ -100,10 +100,11 @@ python carla_eval/run_carla_s01_keep_lane_speed.py
 python carla_eval/run_carla_s02_lane_change.py
 python carla_eval/run_carla_s04_pedestrian_slowdown.py
 python carla_eval/run_carla_s05_cone_detour.py
-python carla_eval/run_carla_s12_complex_obstacle_scene2.py
 python carla_eval/run_carla_s07_cut_in_brake.py
 python carla_eval/run_carla_s08_rain_night_danger_slowdown.py
 python carla_eval/run_carla_s11_basic_control_scene1.py
+python carla_eval/run_carla_s12_complex_obstacle_scene2.py --voice-overlay
+python carla_eval/run_carla_s13_extreme_emergency_scene3.py --voice-overlay
 ```
 
 ### 2. 使用统一 benchmark 入口
@@ -167,7 +168,7 @@ python carla_eval/evaluate.py \
 - `S11_basic_control_scene1_5km`
   - 目标：对应 PDF 场景1基础操控工况；晴天白天城市道路净空连续驾驶 `5km`，正常车速约 `50 km/h`，完成 route 上全部真实路口左/右转、向左变道、提速至 `80 km/h`、减速至 `30 km/h`
   - 配置：[configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml](configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml)
-  - 路线：由场景 YAML 中 `route.mode: carla_lane_trace` 在 `Town05` 自动生成，并在 [routes/dongfeng_benchmark.xml](routes/dongfeng_benchmark.xml) 中注册统一 benchmark route id
+  - 路线：[routes/basic_control/S11_basic_control_scene1_5km.xml](routes/basic_control/S11_basic_control_scene1_5km.xml)，并在 [routes/dongfeng_benchmark.xml](routes/dongfeng_benchmark.xml) 中注册统一 benchmark route id
 
 ### complex_obstacle
 
@@ -184,7 +185,8 @@ python carla_eval/evaluate.py \
 - `S12_complex_obstacle_scene2_8km`
   - 目标：对应 PDF 场景2复杂避障工况；阴天傍晚城市次干道连续驾驶 `8km`，串联完成前方行人减速避让、慢车左变道超越、公交站减速谨慎通过
   - 配置：[configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml](configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml)
-  - 路线：由场景 YAML 中 `route.mode: carla_lane_trace` 在 `Town05` 自动生成，并在 [routes/dongfeng_benchmark.xml](routes/dongfeng_benchmark.xml) 中注册统一 benchmark route id
+  - 路线：[routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml](routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml)
+  - LMDrive 路线：[routes/complex_obstacle/S12_complex_obstacle_scene2_8km_lmdrive.xml](routes/complex_obstacle/S12_complex_obstacle_scene2_8km_lmdrive.xml)
 
 ### emergency_response
 
@@ -197,6 +199,12 @@ python carla_eval/evaluate.py \
   - 目标：雨夜低能见度环境下识别危险并保持安全低速
   - 配置：[configs/scenarios/emergency_response/S08_rain_night_danger_slowdown.yaml](configs/scenarios/emergency_response/S08_rain_night_danger_slowdown.yaml)
   - 路线：[routes/emergency_response/S08_rain_night_danger_slowdown.xml](routes/emergency_response/S08_rain_night_danger_slowdown.xml)
+
+- `S13_extreme_emergency_scene3_6km`
+  - 目标：对应 PDF 场景3极限应急语音操控工况；雨夜低能见度连续驾驶 `6km`，起始危险路况安全车速提示，随后完成突发车辆加塞紧急避让和施工路段减速并道
+  - 配置：[configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml](configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml)
+  - 路线：[routes/emergency_response/S13_extreme_emergency_scene3_6km.xml](routes/emergency_response/S13_extreme_emergency_scene3_6km.xml)
+  - LMDrive 路线：[routes/emergency_response/S13_extreme_emergency_scene3_6km_lmdrive.xml](routes/emergency_response/S13_extreme_emergency_scene3_6km_lmdrive.xml)
 
 ## 指标与评测流程
 
@@ -224,13 +232,11 @@ python carla_eval/evaluate.py \
 - `min_ttc`
 - `emergency_response_latency_ms`
 
-相关说明见：
+相关实现见：
 
-- [docs/metrics/task6_scenario_config_schema.md](docs/metrics/task6_scenario_config_schema.md)
-- [docs/metrics/task7_metric_design.md](docs/metrics/task7_metric_design.md)
-- [docs/metrics/task8_frame_logger_design.md](docs/metrics/task8_frame_logger_design.md)
-- [docs/metrics/task9_event_detector_design.md](docs/metrics/task9_event_detector_design.md)
-- [docs/metrics/task10_report_generator_design.md](docs/metrics/task10_report_generator_design.md)
+- [configs/metrics/metric_schema.yaml](configs/metrics/metric_schema.yaml)
+- [carla_eval/metrics/event_detector.py](carla_eval/metrics/event_detector.py)
+- [carla_eval/metrics/report_generator.py](carla_eval/metrics/report_generator.py)
 
 ## 当前实现与 LMDrive 的关系
 
@@ -248,13 +254,12 @@ python carla_eval/evaluate.py \
 
 相关说明见：
 
-- [docs/pipeline/task0_lmdrive_pipeline_check.md](docs/pipeline/task0_lmdrive_pipeline_check.md)
-- [docs/pipeline/task1_benchmark_survey.md](docs/pipeline/task1_benchmark_survey.md)
-- [docs/pipeline/task2_benchmark_to_dongfeng_mapping.md](docs/pipeline/task2_benchmark_to_dongfeng_mapping.md)
+- [docs/pipeline/lmdrive_style_benchmark.md](docs/pipeline/lmdrive_style_benchmark.md)
+- [docs/scenario_delivery/standalone_bundle_workflow.md](docs/scenario_delivery/standalone_bundle_workflow.md)
 
 ## 说明
 
 - `configs/scenarios/*.yaml` 是当前场景定义的唯一真源
-- 短场景 route 由 `routes/*.xml` 定义；S11 长路线 route 由场景 YAML 中的 `route.lane_trace` 定义，并在 `routes/dongfeng_benchmark.xml` 中注册统一 route id
+- 短场景 route 由 `routes/*.xml` 定义；S11/S12/S13 长路线均有 dense route XML，并在 `routes/dongfeng_benchmark.xml` 中注册统一 route id
 - 早期 `docs/*/task*.md` 中部分文件属于设计稿或阶段性说明，阅读时应优先以当前 config、runner 和 report 为准
 - 当前 README 仅描述仓库已落地的场景与评测能力，不代表语音链路、LMDrive 主模型接入、车规级轻量化部署已经全部完成
