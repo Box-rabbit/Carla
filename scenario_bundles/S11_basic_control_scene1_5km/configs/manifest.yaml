@@ -16,17 +16,23 @@ files:
   validation: validation/route_validation.json
 route:
   source_mode: carla_lane_trace
-  exported_mode: route_xml_dense_validated
+  exported_mode: route_xml
   waypoint_count: 2728
   town: Town05
-  interpolated_length_m: 5280.706
-  max_adjacent_gap_m: 4.654
-  mean_adjacent_gap_m: 1.936
+  category: basic_control
   target_length_m: 5200.0
-  validation_passed: true
 annotations:
   format: json
+provenance:
+  generator: carla_eval/tools/export_standalone_scenario_bundle.py
+  generator_command: python carla_eval/tools/export_standalone_scenario_bundle.py
+    --scenario-id S11_basic_control_scene1_5km
+  source_git_revision: 13b22ecb62d68ec03de04fa7701422c77bb3a3af
+  source_checksums_sha256:
+    routes/dongfeng_benchmark.xml: 3bc9cf0a84fa8ef2ee60e3541651db36ab3a2f6f066be4a59c6e059d972c400c
+    configs/scenario_annotations/dongfeng_benchmark.yaml: 111a4391a3fe5419e071ad2c6ee8c298ac19120ec946d2d7ab6cf6a0d7a78c5e
+    configs/lmdrive/route_audio_matches.yaml: 043a2b02888baa77c1193e476c235f2e12d247263c4b21b4346c0a75e5833672
+    configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml: e0b0be930eda3b8c1093ca458ca69e6c62d0852b0f0f52795ce49b4537e7188b
 notes:
-- The source scenario YAML retains lane_trace parameters for the legacy CARLA
-  runner; standalone delivery uses the dense validated route XML listed above.
-- Dense route XML validated on CARLA Town05 and exported on 2026-07-20.
+- The source scenario YAML retains runtime route parameters for legacy CARLA runner
+  compatibility; the bundle uses the selected route XML.

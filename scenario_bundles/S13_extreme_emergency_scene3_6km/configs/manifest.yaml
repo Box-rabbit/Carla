@@ -6,30 +6,34 @@ carla_version: 0.9.10.1
 source:
   routes_file: routes/dongfeng_benchmark.xml
   annotations_file: configs/scenario_annotations/dongfeng_benchmark.yaml
-  scenario_config: configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml
   voice_matches_file: configs/lmdrive/route_audio_matches.yaml
+  scenario_config: configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml
 files:
   route_xml: routes/S13_extreme_emergency_scene3_6km.xml
-  lmdrive_route_xml: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
   scenario_config: configs/S13_extreme_emergency_scene3_6km.yaml
   annotations: configs/S13_extreme_emergency_scene3_6km.annotations.yaml
   voice_matches: configs/route_audio_matches_S13_extreme_emergency_scene3_6km.yaml
+  lmdrive_route_xml: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
   route_action_alignment: configs/route_action_alignment_S13_extreme_emergency_scene3_6km.yaml
   validation: validation/route_validation.json
   lmdrive_validation: validation/lmdrive_route_validation.json
 route:
   source_mode: route_xml
-  exported_mode: route_xml_dense_validated_trimmed
+  exported_mode: route_xml
   waypoint_count: 3154
   town: Town05
-  interpolated_length_m: 6001.732
-  max_adjacent_gap_m: 2.386
-  mean_adjacent_gap_m: 1.903
-  target_length_m: 6000.0
-  validation_passed: true
+  category: emergency_response
+  target_length_m: null
 annotations:
   format: yaml
-notes:
-  - Dense route XML is a 6km trimmed prefix of the validated Town05 S12 long route.
-  - Cut-in and the single construction merge are separated and located on straight route segments.
-  - LMDrive delivery route encodes the construction detour as CHANGELANELEFT followed by CHANGELANERIGHT.
+provenance:
+  generator: carla_eval/tools/export_standalone_scenario_bundle.py
+  generator_command: python carla_eval/tools/export_standalone_scenario_bundle.py
+    --scenario-id S13_extreme_emergency_scene3_6km
+  source_git_revision: 13b22ecb62d68ec03de04fa7701422c77bb3a3af
+  source_checksums_sha256:
+    routes/dongfeng_benchmark.xml: 3bc9cf0a84fa8ef2ee60e3541651db36ab3a2f6f066be4a59c6e059d972c400c
+    configs/scenario_annotations/dongfeng_benchmark.yaml: 111a4391a3fe5419e071ad2c6ee8c298ac19120ec946d2d7ab6cf6a0d7a78c5e
+    configs/lmdrive/route_audio_matches.yaml: 043a2b02888baa77c1193e476c235f2e12d247263c4b21b4346c0a75e5833672
+    configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml: c74f2355f6605c936521190d05d03b9ae8be8e993bfb86296ee8ad5108a9be73
+    configs/lmdrive/route_action_alignment.yaml: 8834c3dcc93af1bfc6babbcbad0aeeeb6b6edf069a71d435241466d53b48135c

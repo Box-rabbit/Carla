@@ -4,7 +4,7 @@
 
 ## 目标
 
-当前仓库保留已有可运行场景，同时新增一层统一 benchmark 编排：
+当前仓库主线只保留 PDF 要求的 S11/S12/S13，并提供统一 benchmark 编排：
 
 ```text
 route XML
@@ -28,9 +28,8 @@ route XML
   统一 benchmark 入口，替代分散运行脚本作为批量评测主入口。
 
 - `routes/dongfeng_benchmark.xml`
-  当前 7 个场景的总 route XML，route id 直接使用场景 id。
-  其中 S11/S12/S13 在仓库中均有独立的 dense route XML；总 route XML
-  负责统一注册 route id，旧场景 YAML 中保留的 `lane_trace` 仅用于兼容旧 runner。
+  S11/S12/S13 的总 route XML，route id 直接使用场景 id。每个长场景在
+  仓库中均有独立 dense route XML。
 
 - `configs/scenario_annotations/dongfeng_benchmark.yaml`
   场景 annotation 文件，描述 route id 到场景实现、配置、触发条件、期望结果的映射。
@@ -43,28 +42,25 @@ route XML
 
 ## 运行
 
-列出当前 benchmark 中所有 route/scenario：
+列出默认 PDF 交付套件中的 route/scenario：
 
 ```bash
 python carla_eval/run_benchmark.py --list
 ```
 
-运行单个 route：
+运行一个 PDF 交付 route：
 
 ```bash
-python carla_eval/run_benchmark.py --route-id S05_cone_detour
-```
-
-运行全部 route：
-
-```bash
-python carla_eval/run_benchmark.py
+python carla_eval/run_benchmark.py --route-id S12_complex_obstacle_scene2_8km
 ```
 
 常用参数：
 
 - `--routes`: 指定 route XML，默认 `routes/dongfeng_benchmark.xml`
 - `--scenarios`: 指定 annotation 文件，默认 `configs/scenario_annotations/dongfeng_benchmark.yaml`
+- `--suite`: 默认 `pdf_delivery`
+- `--route-source`: 默认 `scenario`，保持场景 YAML 路线；仅显式选择
+  `benchmark` 时才用 `--routes` 覆盖
 - `--route-id`: 只运行某个 route
 - `--repetitions`: 每条 route 重复次数
 - `--checkpoint`: checkpoint 文件
@@ -73,18 +69,18 @@ python carla_eval/run_benchmark.py
 
 ## 与旧入口的关系
 
-旧入口仍然保留：
+单场景入口仍然保留：
 
 ```bash
-python carla_eval/run_carla_s05_cone_detour.py
 python carla_eval/run_carla_s11_basic_control_scene1.py
 ```
 
 建议：
 
-- 单场景调试时可以继续用旧入口；
+- 单场景调试时可以继续用 S11/S12/S13 单场景入口；
 - 汇报、批量评测、后续接 LMDrive 时优先用 `run_benchmark.py`；
-- 新场景应同时补充 `routes/dongfeng_benchmark.xml` 和 `configs/scenario_annotations/dongfeng_benchmark.yaml`。
+- 新场景应同时补充 `configs/benchmark_suites.yaml`、`routes/dongfeng_benchmark.xml`
+  和 `configs/scenario_annotations/dongfeng_benchmark.yaml`。
 
 ## 当前限制
 

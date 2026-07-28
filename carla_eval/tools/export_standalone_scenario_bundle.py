@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
+import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -26,6 +28,7 @@ import yaml
 DEFAULT_ROUTES = Path("routes/dongfeng_benchmark.xml")
 DEFAULT_SCENARIOS = Path("configs/scenario_annotations/dongfeng_benchmark.yaml")
 DEFAULT_VOICE_MATCHES = Path("configs/lmdrive/route_audio_matches.yaml")
+DEFAULT_ROUTE_ACTION_ALIGNMENT = Path("configs/lmdrive/route_action_alignment.yaml")
 DEFAULT_OUTPUT_ROOT = Path("scenario_bundles")
 
 
@@ -98,6 +101,30 @@ def _write_json(path: Path, payload: Dict[str, Any]) -> None:
         f.write("\n")
 
 
+def _sha256_file(path: Path) -> Optional[str]:
+    if not path.exists():
+        return None
+
+    digest = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _git_revision() -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return result.stdout.strip() or None
+
+
 def _route_mode(cfg: Dict[str, Any]) -> str:
     return str(cfg.get("route", {}).get("mode", "xml")).strip() or "xml"
 
@@ -107,6 +134,7 @@ def _build_exported_scenario_config(
     *,
     route_id: str,
     route_xml_rel: str,
+    lmdrive_route_xml_rel: Optional[str] = None,
 ) -> Dict[str, Any]:
     exported = copy.deepcopy(cfg)
     route_cfg = exported.setdefault("route", {})
@@ -124,6 +152,9 @@ def _build_exported_scenario_config(
 
     route_cfg["route_file"] = route_xml_rel
     route_cfg["route_id"] = route_id
+    route_cfg["design_route_file"] = route_xml_rel
+    if lmdrive_route_xml_rel:
+        route_cfg["lmdrive_route_file"] = lmdrive_route_xml_rel
     return exported
 
 
@@ -162,6 +193,33 @@ def _collect_voice_matches(
     return payload
 
 
+def _collect_route_action_alignment(
+    alignment_file: Path,
+    scenario_id: str,
+    lmdrive_route_rel: Optional[str],
+) -> Optional[Dict[str, Any]]:
+    if not lmdrive_route_rel or not alignment_file.exists():
+        return None
+
+    source = _load_structured_file(alignment_file)
+    matching_routes = [
+        copy.deepcopy(item)
+        for item in source.get("routes", [])
+        if str(item.get("scenario_id", "")) == scenario_id
+    ]
+    if not matching_routes:
+        return None
+
+    for item in matching_routes:
+        item["delivery_route_file"] = lmdrive_route_rel
+
+    return {
+        "description": source.get("description", "Scenario-specific voice-to-route alignment."),
+        "version": source.get("version", 1),
+        "routes": matching_routes,
+    }
+
+
 def _build_annotation_bundle(
     town: str,
     annotation_item: Dict[str, Any],
@@ -196,6 +254,10 @@ def _build_manifest(
     source_routes_file: Path,
     source_annotations_file: Path,
     source_voice_matches_file: Path,
+    source_route_action_alignment_file: Path,
+    lmdrive_route_xml_rel: Optional[str],
+    route_action_alignment_rel: Optional[str],
+    validation_files: Dict[str, str],
 ) -> Dict[str, Any]:
     route_mode = _route_mode(cfg)
     waypoint_count = len(route_elem.findall("waypoint"))
@@ -243,7 +305,29 @@ def _build_manifest(
         "annotations": {
             "format": annotations_format,
         },
+        "provenance": {
+            "generator": "carla_eval/tools/export_standalone_scenario_bundle.py",
+            "generator_command": (
+                "python carla_eval/tools/export_standalone_scenario_bundle.py "
+                f"--scenario-id {scenario_id}"
+            ),
+            "source_git_revision": _git_revision(),
+            "source_checksums_sha256": {
+                str(source_routes_file): _sha256_file(source_routes_file),
+                str(source_annotations_file): _sha256_file(source_annotations_file),
+                str(source_voice_matches_file): _sha256_file(source_voice_matches_file),
+                str(config_path): _sha256_file(config_path),
+            },
+        },
     }
+    if lmdrive_route_xml_rel:
+        manifest["files"]["lmdrive_route_xml"] = lmdrive_route_xml_rel
+    if route_action_alignment_rel:
+        manifest["files"]["route_action_alignment"] = route_action_alignment_rel
+        manifest["provenance"]["source_checksums_sha256"][
+            str(source_route_action_alignment_file)
+        ] = _sha256_file(source_route_action_alignment_file)
+    manifest["files"].update(validation_files)
     if notes:
         manifest["notes"] = notes
     return manifest
@@ -255,6 +339,7 @@ def export_bundle(
     routes_file: Path,
     scenarios_file: Path,
     voice_matches_file: Path,
+    route_action_alignment_file: Path,
     output_root: Path,
     annotations_format: str,
 ) -> Path:
@@ -282,15 +367,33 @@ def export_bundle(
 
     scenario_config_rel = f"configs/{scenario_id}.yaml"
     route_xml_rel = f"routes/{scenario_id}.xml"
+    lmdrive_route_xml_rel = None
     annotations_name = f"{scenario_id}.annotations.{annotations_format}"
     annotations_rel = f"configs/{annotations_name}"
     voice_matches_name = f"route_audio_matches_{scenario_id}.yaml"
     voice_matches_rel = f"configs/{voice_matches_name}"
+    route_action_alignment_rel = None
+
+    configured_lmdrive_route = str(
+        cfg.get("route", {}).get("lmdrive_route_file", "")
+    ).strip()
+    if configured_lmdrive_route:
+        lmdrive_source = Path(configured_lmdrive_route)
+        if not lmdrive_source.exists():
+            raise FileNotFoundError(
+                f"Configured LMDrive route does not exist: {lmdrive_source}"
+            )
+        lmdrive_route_xml_rel = f"routes/{scenario_id}_lmdrive.xml"
+        _write_xml_document(
+            _find_route_element(lmdrive_source, route_id),
+            bundle_root / lmdrive_route_xml_rel,
+        )
 
     exported_cfg = _build_exported_scenario_config(
         cfg,
         route_id=route_id,
         route_xml_rel=route_xml_rel,
+        lmdrive_route_xml_rel=lmdrive_route_xml_rel,
     )
     _write_yaml(bundle_root / scenario_config_rel, exported_cfg)
     _write_xml_document(route_elem, bundle_root / route_xml_rel)
@@ -309,11 +412,36 @@ def export_bundle(
         voice_matches_data=voice_matches_data,
         scenario_id=scenario_id,
         route_id=route_id,
-        route_file_rel=route_xml_rel,
+        route_file_rel=lmdrive_route_xml_rel or route_xml_rel,
         scenario_config_rel=scenario_config_rel,
         annotations_rel=annotations_rel,
     )
     _write_yaml(bundle_root / voice_matches_rel, voice_bundle)
+
+    route_action_alignment = _collect_route_action_alignment(
+        route_action_alignment_file,
+        scenario_id,
+        lmdrive_route_xml_rel,
+    )
+    if route_action_alignment is not None:
+        route_action_alignment_rel = (
+            f"configs/route_action_alignment_{scenario_id}.yaml"
+        )
+        _write_yaml(
+            bundle_root / route_action_alignment_rel,
+            route_action_alignment,
+        )
+
+    validation_files = {}
+    for manifest_key, validation_name in (
+        ("validation", "route_validation.json"),
+        ("lmdrive_validation", "lmdrive_route_validation.json"),
+    ):
+        validation_path = bundle_root / "validation" / validation_name
+        if validation_path.exists():
+            validation_files[manifest_key] = (
+                f"validation/{validation_name}"
+            )
 
     manifest = _build_manifest(
         scenario_id=scenario_id,
@@ -331,6 +459,10 @@ def export_bundle(
         source_routes_file=routes_file,
         source_annotations_file=scenarios_file,
         source_voice_matches_file=voice_matches_file,
+        source_route_action_alignment_file=route_action_alignment_file,
+        lmdrive_route_xml_rel=lmdrive_route_xml_rel,
+        route_action_alignment_rel=route_action_alignment_rel,
+        validation_files=validation_files,
     )
     _write_yaml(bundle_root / "configs/manifest.yaml", manifest)
 
@@ -347,6 +479,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--routes", default=str(DEFAULT_ROUTES))
     parser.add_argument("--scenarios", default=str(DEFAULT_SCENARIOS))
     parser.add_argument("--voice-match-config", default=str(DEFAULT_VOICE_MATCHES))
+    parser.add_argument(
+        "--route-action-alignment",
+        default=str(DEFAULT_ROUTE_ACTION_ALIGNMENT),
+    )
     parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT))
     parser.add_argument("--annotations-format", choices=("yaml", "json"), default="yaml")
     args = parser.parse_args(argv)
@@ -356,6 +492,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         routes_file=Path(args.routes),
         scenarios_file=Path(args.scenarios),
         voice_matches_file=Path(args.voice_match_config),
+        route_action_alignment_file=Path(args.route_action_alignment),
         output_root=Path(args.output_root),
         annotations_format=str(args.annotations_format),
     )

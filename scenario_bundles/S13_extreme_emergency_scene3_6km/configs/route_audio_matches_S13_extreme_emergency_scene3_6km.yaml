@@ -5,7 +5,7 @@ prefer_route_hard: true
 matches:
 - audio_id: record_01_20260722_195215
   status: matched
-  match_score: 100
+  match_score: 97
   route_id: S13_extreme_emergency_scene3_6km
   scenario_id: S13_extreme_emergency_scene3_6km
   town: Town05
@@ -23,12 +23,13 @@ matches:
     intents:
     - DANGEROUS_WEATHER
     - SLOW_DOWN
+    target_speed_kmh: 30
     no_collision: true
-    target_speed_kmh: 30.0
     recognized_intents:
     - SLOW_DOWN
   voice:
     audio_id: record_01_20260722_195215
+    scenario_hint: S13
     json_path: data/audio/S13/20260722/record_01_20260722_195215.json
     audio_path: data/audio/S13/20260722/record_01_20260722_195215.wav
     input_text: 前方路况危险，保持安全车速。
@@ -39,10 +40,9 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: null
     confidence: 1.0
-    raw_audio_path: data\audio\S13\20260722\record_01_20260722_195215.wav
 - audio_id: record_02_20260722_195220
   status: matched
-  match_score: 100
+  match_score: 127
   route_id: S13_extreme_emergency_scene3_6km
   scenario_id: S13_extreme_emergency_scene3_6km
   town: Town05
@@ -67,6 +67,7 @@ matches:
     - EMERGENCY_BRAKE
   voice:
     audio_id: record_02_20260722_195220
+    scenario_hint: S13
     json_path: data/audio/S13/20260722/record_02_20260722_195220.json
     audio_path: data/audio/S13/20260722/record_02_20260722_195220.wav
     input_text: 突发车辆加塞，紧急避让。
@@ -78,10 +79,9 @@ matches:
     - EMERGENCY_BRAKE
     target_speed_kmh: null
     confidence: 1.0
-    raw_audio_path: data\audio\S13\20260722\record_02_20260722_195220.wav
 - audio_id: record_03_20260722_195226
   status: matched
-  match_score: 100
+  match_score: 147
   route_id: S13_extreme_emergency_scene3_6km
   scenario_id: S13_extreme_emergency_scene3_6km
   town: Town05
@@ -101,19 +101,21 @@ matches:
     - LANE_CHANGE_LEFT
     - LANE_CHANGE_RIGHT
     - SLOW_DOWN
+    target_speed_kmh: 30
     no_collision: true
-    target_speed_kmh: 30.0
     recognized_intents:
     - LANE_CHANGE_LEFT
     - AVOID_CONSTRUCTION
     - SLOW_DOWN
   voice:
     audio_id: record_03_20260722_195226
+    scenario_hint: S13
     json_path: data/audio/S13/20260722/record_03_20260722_195226.json
     audio_path: data/audio/S13/20260722/record_03_20260722_195226.wav
     input_text: 施工路段减速并倒致左侧车道。
     normalized_text: 施工路段减速并道至左侧车道
-    instruction: Change lane to the left, then avoid the construction zone ahead, then slow down now.
+    instruction: Change lane to the left, then avoid the construction zone ahead,
+      then slow down now.
     primary_intent: LANE_CHANGE_LEFT
     recognized_intents:
     - LANE_CHANGE_LEFT
@@ -121,5 +123,4 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: null
     confidence: 0.8
-    raw_audio_path: data\audio\S13\20260722\record_03_20260722_195226.wav
 voice_lead_distance_m: 40.0

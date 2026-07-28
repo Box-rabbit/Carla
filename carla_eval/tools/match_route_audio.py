@@ -190,7 +190,6 @@ def _load_audio_results(results_dir):
             "recognized_intents": [str(item) for item in intents],
             "target_speed_kmh": target_speed,
             "confidence": payload.get("confidence"),
-            "raw_audio_path": payload.get("audio_path"),
         })
     return records
 

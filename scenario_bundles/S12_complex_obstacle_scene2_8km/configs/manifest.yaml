@@ -10,29 +10,30 @@ source:
   scenario_config: configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml
 files:
   route_xml: routes/S12_complex_obstacle_scene2_8km.xml
-  lmdrive_route_xml: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
   scenario_config: configs/S12_complex_obstacle_scene2_8km.yaml
   annotations: configs/S12_complex_obstacle_scene2_8km.annotations.yaml
   voice_matches: configs/route_audio_matches_S12_complex_obstacle_scene2_8km.yaml
+  lmdrive_route_xml: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
   route_action_alignment: configs/route_action_alignment_S12_complex_obstacle_scene2_8km.yaml
   validation: validation/route_validation.json
   lmdrive_validation: validation/lmdrive_route_validation.json
 route:
   source_mode: route_xml
-  exported_mode: route_xml_dense_validated_trimmed
+  exported_mode: route_xml
   waypoint_count: 4249
   town: Town05
-  interpolated_length_m: 8082.943
-  max_adjacent_gap_m: 2.386
-  mean_adjacent_gap_m: 1.903
-  target_length_m: 8080.0
-  validation_passed: true
-  turn_task_min_gap_m: 111.8
+  category: complex_obstacle
+  target_length_m: null
 annotations:
   format: yaml
-notes:
-- Dense route XML is a validated Town05 route suffix trimmed to avoid adjacent
-  turn tasks closer than 100m.
-- Detected turn-task gaps are 111.8m and 325.2m.
-- LMDrive delivery route encodes the overtake as CHANGELANELEFT followed by
-  CHANGELANERIGHT on a straight road segment.
+provenance:
+  generator: carla_eval/tools/export_standalone_scenario_bundle.py
+  generator_command: python carla_eval/tools/export_standalone_scenario_bundle.py
+    --scenario-id S12_complex_obstacle_scene2_8km
+  source_git_revision: 13b22ecb62d68ec03de04fa7701422c77bb3a3af
+  source_checksums_sha256:
+    routes/dongfeng_benchmark.xml: 3bc9cf0a84fa8ef2ee60e3541651db36ab3a2f6f066be4a59c6e059d972c400c
+    configs/scenario_annotations/dongfeng_benchmark.yaml: 111a4391a3fe5419e071ad2c6ee8c298ac19120ec946d2d7ab6cf6a0d7a78c5e
+    configs/lmdrive/route_audio_matches.yaml: 043a2b02888baa77c1193e476c235f2e12d247263c4b21b4346c0a75e5833672
+    configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml: 4eb9b67ce7798a1b24d2a5d8b7e3453b842e428b36fb3b97c2ce6c9832416e51
+    configs/lmdrive/route_action_alignment.yaml: 8834c3dcc93af1bfc6babbcbad0aeeeb6b6edf069a71d435241466d53b48135c

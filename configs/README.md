@@ -4,6 +4,7 @@
 
 - `scenarios/`: CARLA 场景真源，定义地图、ego、actors、指令、成功/失败条件、指标
 - `scenario_annotations/`: LMDrive/Leaderboard 风格 annotation，负责 route id 到场景实现、触发条件、期望结果的映射
+- `benchmark_suites.yaml`: 默认 PDF 交付套件的成员清单
 - `lmdrive/`: LMDrive/Voice2LMDrive 轻量桥接配置；其中路线改造和动作对齐是维护输入，音频匹配是自动生成结果
 - `metrics/`: 日志、事件、报告的字段 schema
 - `taxonomy/`: 场景分类与设计原则
@@ -40,3 +41,12 @@ python carla_eval/tools/match_route_audio.py
 
 旧的 `scenarios_db/` Town03 索引已移除。当前 route/scenario 匹配统一使用
 `routes/dongfeng_benchmark.xml` 与 `scenario_annotations/dongfeng_benchmark.yaml`。
+
+## 运行路线选择
+
+`carla_eval/run_benchmark.py` 默认使用 `pdf_delivery` 套件，并保持每个
+场景 YAML 中的 `route.route_file` 作为运行路线真源。只有显式传入
+`--route-source benchmark` 时，统一 benchmark XML 才会覆盖场景路线。
+
+早期 S01/S02/S04/S05/S07/S08 短场景已归档到
+`archive/legacy_short_scenarios/`，不再出现在活跃 benchmark 配置中。

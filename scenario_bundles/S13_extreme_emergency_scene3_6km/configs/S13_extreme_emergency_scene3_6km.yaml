@@ -175,9 +175,8 @@ instructions:
     type: time
     value: 0.0
   text_zh: PDF场景3极限应急：突发车辆加塞时立即紧急避让，施工路段减速并道至左侧车道，并完成6公里连续驾驶。
-  text_en: 'PDF scene 3 extreme emergency: react immediately to a sudden cut-in,
-    slow down and merge left through construction,
-    and finish a 6km continuous drive.'
+  text_en: 'PDF scene 3 extreme emergency: react immediately to a sudden cut-in, slow
+    down and merge left through construction, and finish a 6km continuous drive.'
   intent:
     type: extreme_emergency_scene3
     route_action: follow_route

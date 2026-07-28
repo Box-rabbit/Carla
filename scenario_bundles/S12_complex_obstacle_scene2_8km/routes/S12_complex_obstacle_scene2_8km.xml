@@ -2,7 +2,6 @@
 <routes>
   <route id="S12_complex_obstacle_scene2_8km" town="Town05" category="complex_obstacle">
     <weather cloudiness="60" precipitation="0" sun_altitude_angle="15" />
-    <!--Dense S12 route trimmed from a CARLA-validated Town05 lane_trace route to avoid adjacent turn tasks closer than 100m.-->
     <waypoint x="151.307" y="5.843" z="0.500" />
     <waypoint x="151.527" y="7.480" z="0.500" />
     <waypoint x="151.529" y="9.480" z="0.500" />

@@ -1,8 +1,7 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <routes>
   <route id="S13_extreme_emergency_scene3_6km" town="Town05" category="emergency_response">
     <weather cloudiness="100" precipitation="78" sun_altitude_angle="-22" />
-    <!--Dense S13 route trimmed from the validated S12 Town05 route at 6km for PDF scene-3 emergency driving.-->
     <waypoint x="151.307" y="5.843" z="0.500" />
     <waypoint x="151.527" y="7.480" z="0.500" />
     <waypoint x="151.529" y="9.480" z="0.500" />

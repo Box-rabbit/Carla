@@ -1,6 +1,10 @@
-scenario_id: S13_extreme_emergency_scene3_6km
-delivery_route_file: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
-actions:
+description: Maintained voice-to-route alignment for S12 and S13. Voice controls are
+  longitudinal unless an explicit route action is encoded in the delivery XML.
+version: 1
+routes:
+- scenario_id: S13_extreme_emergency_scene3_6km
+  delivery_route_file: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
+  actions:
   - event_id: dangerous_road_safety_speed
     voice_trigger_progress_m: 0.0
     scenario_action_start_progress_m: 0.0

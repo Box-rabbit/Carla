@@ -14,6 +14,7 @@
 - `scenario_design/`: 三场景交付索引
 - `metrics/`: 运行时指标实现与 schema
 - `pipeline/`: LMDrive/Leaderboard 参考流程与接入边界
+- `submission/`: 用户维护的提交材料，不由场景整理流程移动或覆盖
 
 阅读原则：
 

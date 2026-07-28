@@ -1,6 +1,5 @@
-description: >-
-  Generated voice-match output. Do not edit manually; regenerate with
-  carla_eval/tools/match_route_audio.py after changing data/audio or annotations.
+description: Generated voice-match output. Do not edit manually; regenerate with carla_eval/tools/match_route_audio.py
+  after changing data/audio or annotations.
 generated_by: carla_eval/tools/match_route_audio.py
 results_dir: data/audio
 routes_file: routes/dongfeng_benchmark.xml
@@ -49,7 +48,6 @@ matches:
     - GO_STRAIGHT
     target_speed_kmh: 80.0
     confidence: 0.8
-    raw_audio_path: data\audio\S11\20260715\record_01_20260715_204043.wav
 - audio_id: record_02_20260715_204051
   status: matched
   match_score: 54
@@ -87,7 +85,6 @@ matches:
     - TURN_LEFT
     target_speed_kmh: null
     confidence: 0.8
-    raw_audio_path: data\audio\S11\20260715\record_02_20260715_204051.wav
 - audio_id: record_03_20260715_204059
   status: matched
   match_score: 50
@@ -127,7 +124,6 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: null
     confidence: 0.8
-    raw_audio_path: data\audio\S11\20260715\record_03_20260715_204059.wav
 - audio_id: record_04_20260715_204105
   status: matched
   match_score: 54
@@ -165,7 +161,6 @@ matches:
     - TURN_RIGHT
     target_speed_kmh: null
     confidence: 0.95
-    raw_audio_path: data\audio\S11\20260715\record_04_20260715_204105.wav
 - audio_id: record_05_20260715_204111
   status: matched
   match_score: 54
@@ -203,7 +198,6 @@ matches:
     - LANE_CHANGE_LEFT
     target_speed_kmh: null
     confidence: 1.0
-    raw_audio_path: data\audio\S11\20260715\record_05_20260715_204111.wav
 - audio_id: record_01_20260721_225513
   status: matched
   match_score: 127
@@ -243,7 +237,6 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: null
     confidence: 0.8
-    raw_audio_path: data\audio\S12\20260721\record_01_20260721_225513.wav
 - audio_id: record_02_20260721_225524
   status: matched
   match_score: 137
@@ -285,7 +278,6 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: null
     confidence: 0.8
-    raw_audio_path: data\audio\S12\20260721\record_02_20260721_225524.wav
 - audio_id: record_03_20260721_225538
   status: matched
   match_score: 182
@@ -330,7 +322,6 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: 30.0
     confidence: 0.8
-    raw_audio_path: data\audio\S12\20260721\record_03_20260721_225538.wav
 - audio_id: record_01_20260722_195215
   status: matched
   match_score: 97
@@ -368,7 +359,6 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: null
     confidence: 1.0
-    raw_audio_path: data\audio\S13\20260722\record_01_20260722_195215.wav
 - audio_id: record_02_20260722_195220
   status: matched
   match_score: 127
@@ -408,7 +398,6 @@ matches:
     - EMERGENCY_BRAKE
     target_speed_kmh: null
     confidence: 1.0
-    raw_audio_path: data\audio\S13\20260722\record_02_20260722_195220.wav
 - audio_id: record_03_20260722_195226
   status: matched
   match_score: 147
@@ -453,4 +442,3 @@ matches:
     - SLOW_DOWN
     target_speed_kmh: null
     confidence: 0.8
-    raw_audio_path: data\audio\S13\20260722\record_03_20260722_195226.wav

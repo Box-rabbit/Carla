@@ -14,6 +14,7 @@ if __package__ in (None, ""):
 
 DEFAULT_ROUTES = Path("routes/dongfeng_benchmark.xml")
 DEFAULT_SCENARIOS = Path("configs/scenario_annotations/dongfeng_benchmark.yaml")
+DEFAULT_SUITES = Path("configs/benchmark_suites.yaml")
 
 
 def _parse_args(argv=None):
@@ -22,7 +23,15 @@ def _parse_args(argv=None):
     )
     parser.add_argument("--routes", default=str(DEFAULT_ROUTES), help="Route XML file")
     parser.add_argument("--scenarios", default=str(DEFAULT_SCENARIOS), help="Scenario annotation YAML/JSON")
+    parser.add_argument("--suites", default=str(DEFAULT_SUITES), help="Benchmark suite YAML")
+    parser.add_argument("--suite", default=None, help="Suite name; defaults to the PDF delivery suite")
     parser.add_argument("--route-id", default=None, help="Run only one route id")
+    parser.add_argument(
+        "--route-source",
+        choices=("scenario", "benchmark"),
+        default="scenario",
+        help="Use each scenario YAML route by default; benchmark overrides are explicit.",
+    )
     parser.add_argument("--repetitions", type=int, default=1)
     parser.add_argument("--checkpoint", default="logs/benchmark/checkpoint.json")
     parser.add_argument("--resume", action="store_true")
@@ -57,12 +66,30 @@ def _load_list_annotations(path):
     return annotations
 
 
-def _list_routes(routes_file, scenarios_file, route_id=None):
+def _load_suite(path, suite_name=None):
+    with Path(path).open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+
+    selected = str(suite_name or data.get("default_suite", "")).strip()
+    suite = (data.get("suites") or {}).get(selected)
+    if not isinstance(suite, dict):
+        available = ", ".join(sorted((data.get("suites") or {}).keys()))
+        raise RuntimeError(f"Unknown benchmark suite {selected!r}; available: {available}")
+
+    route_ids = [str(item) for item in suite.get("route_ids", [])]
+    if not route_ids:
+        raise RuntimeError(f"Benchmark suite {selected!r} has no route_ids")
+    return selected, set(route_ids)
+
+
+def _list_routes(routes_file, scenarios_file, route_id=None, allowed_route_ids=None):
     annotations = _load_list_annotations(scenarios_file)
     results = []
     root = ET.parse(str(routes_file)).getroot()
     for route in root.findall("route"):
         current_id = str(route.get("id", ""))
+        if allowed_route_ids is not None and current_id not in allowed_route_ids:
+            continue
         if route_id is not None and current_id != str(route_id):
             continue
         town = str(route.get("town", "Town03"))
@@ -93,10 +120,21 @@ def main(argv=None):
     routes_file = Path(args.routes)
     scenarios_file = Path(args.scenarios)
     checkpoint_path = Path(args.checkpoint)
+    suite_name, suite_route_ids = _load_suite(args.suites, args.suite)
+    if args.route_id is not None and str(args.route_id) not in suite_route_ids:
+        raise RuntimeError(
+            f"route_id={args.route_id} is not part of suite={suite_name}; "
+            "select another suite with --suite."
+        )
 
     if args.list:
         print(json.dumps(
-            _list_routes(routes_file, scenarios_file, args.route_id),
+            _list_routes(
+                routes_file,
+                scenarios_file,
+                args.route_id,
+                allowed_route_ids=suite_route_ids,
+            ),
             indent=2,
             ensure_ascii=False,
         ))
@@ -117,6 +155,8 @@ def main(argv=None):
     results = []
     while indexer.peek():
         route_config = indexer.next()
+        if route_config.scenario_id not in suite_route_ids:
+            continue
         if args.route_id is not None and route_config.scenario_id != str(args.route_id):
             continue
 
@@ -126,10 +166,17 @@ def main(argv=None):
                 f"No scenario annotation for town={route_config.town}, route_id={route_config.scenario_id}"
             )
 
-        route_scenario = DongfengRouteScenario(route_config, annotation, routes_file)
+        route_scenario = DongfengRouteScenario(
+            route_config,
+            annotation,
+            routes_file,
+            use_benchmark_route=args.route_source == "benchmark",
+        )
         print(
             "[BENCHMARK] "
             f"{indexer.current_index}/{indexer.total} "
+            f"suite={suite_name} "
+            f"route_source={args.route_source} "
             f"route_id={route_config.scenario_id} "
             f"town={route_config.town} "
             f"scenario={annotation.scenario_id} "

@@ -1,6 +1,10 @@
-scenario_id: S12_complex_obstacle_scene2_8km
-delivery_route_file: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
-actions:
+description: Maintained voice-to-route alignment for S12 and S13. Voice controls are
+  longitudinal unless an explicit route action is encoded in the delivery XML.
+version: 1
+routes:
+- scenario_id: S12_complex_obstacle_scene2_8km
+  delivery_route_file: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
+  actions:
   - event_id: pedestrian_crossing
     voice_trigger_progress_m: 280.0
     scenario_action_start_progress_m: 300.0

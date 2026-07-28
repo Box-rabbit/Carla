@@ -1,0 +1,12 @@
+version: 1
+default_suite: pdf_delivery
+
+# Suite membership controls the unified runner's scope. Scenario YAML files
+# remain the canonical source of runtime route selection and behavior.
+suites:
+  pdf_delivery:
+    description: PDF-required continuous-driving delivery scenarios.
+    route_ids:
+      - S11_basic_control_scene1_5km
+      - S12_complex_obstacle_scene2_8km
+      - S13_extreme_emergency_scene3_6km
