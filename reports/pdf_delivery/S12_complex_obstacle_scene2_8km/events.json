@@ -1,0 +1,113 @@
+[
+  {
+    "event": "instruction_triggered",
+    "timestamp": null,
+    "instruction_id": "cmd_scene2_no_voice",
+    "trigger_type": null,
+    "trigger_distance_m": null,
+    "route_distance_to_trigger_anchor_m": null,
+    "voice_backend": null,
+    "voice_backend_mode": null,
+    "voice_backend_status": null,
+    "voice_error": null,
+    "voice_input_mode": null,
+    "voice_audio_path": null,
+    "recognized_text": null,
+    "recognized_intents": null,
+    "expected_intents": null,
+    "intent_match": null,
+    "voice_target_speed_max_kmh": null,
+    "expected_target_speed_max_kmh": null,
+    "voice_no_collision": null,
+    "expected_no_collision": null
+  },
+  {
+    "event": "task_failure",
+    "timestamp": 15.350000000000001,
+    "success": false,
+    "failure_reason": "lane_invasion"
+  },
+  {
+    "event": "pedestrian_detected",
+    "timestamp": 26.950000000000003,
+    "distance_to_pedestrian": 23.707794189453125,
+    "detection_distance_m": 24.0
+  },
+  {
+    "event": "slowdown_started",
+    "timestamp": 26.950000000000003,
+    "distance_to_pedestrian": 23.707794189453125,
+    "safe_speed_kmh": 30.0,
+    "response_time_s": 0.0
+  },
+  {
+    "event": "safe_slowdown_completed",
+    "timestamp": 30.8,
+    "distance_to_pedestrian": 13.57155704498291,
+    "ego_speed_kmh": 1.3746189592536484e-07,
+    "slowdown_hold_time": 2.5999999999999988,
+    "required_slowdown_seconds": 1.0,
+    "min_distance_to_pedestrian": 12.844559669494629,
+    "safe_speed_kmh": 30.0,
+    "min_safe_distance_m": 4.5
+  },
+  {
+    "event": "slow_vehicle_detected",
+    "timestamp": 89.35000000000001,
+    "front_vehicle_gap": 29.699404929798447,
+    "front_vehicle_distance": 29.15962028503418
+  },
+  {
+    "event": "lane_change_started",
+    "timestamp": 92.60000000000001,
+    "front_vehicle_gap": 14.994434164086215,
+    "target_lateral_offset_m": -3.5,
+    "response_time_s": 3.25
+  },
+  {
+    "event": "overtake_completed",
+    "timestamp": 95.95,
+    "front_vehicle_gap": -3.1611016802048653,
+    "min_front_vehicle_gap_m": 0.026479003591020955
+  },
+  {
+    "event": "return_to_lane_completed",
+    "timestamp": 100.9,
+    "return_hold_time": 2.000000000000001,
+    "required_return_hold_seconds": 2.0,
+    "lateral_offset_from_lane_center": -7.629299489053665e-05,
+    "return_lane_tolerance_m": 0.25
+  },
+  {
+    "event": "bus_stop_detected",
+    "timestamp": 144.65,
+    "distance_to_bus_stop": 49.42715835571289
+  },
+  {
+    "event": "bus_stop_slowdown_started",
+    "timestamp": 144.65,
+    "distance_to_bus_stop": 49.42715835571289,
+    "target_speed_kmh": 30.0,
+    "response_time_s": 0.0
+  },
+  {
+    "event": "bus_stop_pass_completed",
+    "timestamp": 152.35,
+    "ego_speed_kmh": 27.67343818174903,
+    "bus_stop_hold_time": 5.849999999999987,
+    "required_hold_seconds": 2.0,
+    "target_speed_kmh": 30.0
+  },
+  {
+    "event": "long_route_completed",
+    "timestamp": 622.5500000000001,
+    "max_route_progress_m": 8001.011054589846,
+    "target_progress_m": 8000.0,
+    "route_completion": 0.9772761206217705
+  },
+  {
+    "event": "task_success",
+    "timestamp": 622.5500000000001,
+    "success": true
+  }
+]

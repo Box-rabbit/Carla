@@ -1,0 +1,102 @@
+[
+  {
+    "event": "instruction_triggered",
+    "timestamp": null,
+    "instruction_id": "cmd_scene3_no_voice",
+    "trigger_type": null,
+    "trigger_distance_m": null,
+    "route_distance_to_trigger_anchor_m": null,
+    "voice_backend": null,
+    "voice_backend_mode": null,
+    "voice_backend_status": null,
+    "voice_error": null,
+    "voice_input_mode": null,
+    "voice_audio_path": null,
+    "recognized_text": null,
+    "recognized_intents": null,
+    "expected_intents": null,
+    "intent_match": null,
+    "voice_target_speed_max_kmh": null,
+    "expected_target_speed_max_kmh": null,
+    "voice_no_collision": null,
+    "expected_no_collision": null
+  },
+  {
+    "event": "safe_speed_reached",
+    "timestamp": 0.0,
+    "safe_speed_hold_time": 0.0,
+    "required_safe_speed_hold_seconds": 2.0,
+    "ego_speed_kmh": 0.005580161975997656
+  },
+  {
+    "event": "worker_detected",
+    "timestamp": 86.25,
+    "worker_distance_m": 29.86323543783836
+  },
+  {
+    "event": "cut_in_detected",
+    "timestamp": 89.05000000000001,
+    "front_vehicle_gap": 9.279830553189043,
+    "front_vehicle_distance": 9.983546057978366,
+    "front_vehicle_lateral_offset": -3.498768691663857,
+    "ttc_s": 0.709338041239921
+  },
+  {
+    "event": "emergency_brake_started",
+    "timestamp": 89.65,
+    "front_vehicle_gap": 10.191303482425914,
+    "front_vehicle_distance": 10.819198231286938,
+    "ttc_s": 0.937243170235733,
+    "response_time_s": 0.5999999999999943,
+    "max_response_time_seconds": 0.12
+  },
+  {
+    "event": "safe_brake_completed",
+    "timestamp": 93.25,
+    "safe_follow_hold_time": 0.8000000000000002,
+    "required_safe_follow_seconds": 0.8,
+    "min_front_vehicle_distance": 9.983546057978366,
+    "safe_follow_distance_m": 16.0,
+    "safe_speed_kmh": 25.0
+  },
+  {
+    "event": "construction_detected",
+    "timestamp": 195.20000000000002,
+    "distance_to_construction": -0.39582750037607184
+  },
+  {
+    "event": "merge_started",
+    "timestamp": 199.75,
+    "target_lateral_offset_m": -3.5
+  },
+  {
+    "event": "merge_completed",
+    "timestamp": 205.25,
+    "merge_hold_time": 0.8000000000000002,
+    "required_merge_hold_seconds": 0.8
+  },
+  {
+    "event": "construction_pass_completed",
+    "timestamp": 225.3,
+    "construction_return_hold_time": 1.1500000000000004,
+    "required_return_hold_seconds": 0.8
+  },
+  {
+    "event": "task_failure",
+    "timestamp": 338.8,
+    "success": false,
+    "failure_reason": "route_deviation"
+  },
+  {
+    "event": "long_route_completed",
+    "timestamp": 489.70000000000005,
+    "max_route_progress_m": 5941.680703554207,
+    "target_progress_m": 5950.0,
+    "route_completion": 0.9901890879373264
+  },
+  {
+    "event": "task_success",
+    "timestamp": 489.70000000000005,
+    "success": true
+  }
+]

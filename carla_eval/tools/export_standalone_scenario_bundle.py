@@ -65,7 +65,22 @@ def _find_route_element(routes_file: Path, route_id: str) -> ET.Element:
 def _write_xml_document(route_elem: ET.Element, output_path: Path) -> None:
     root = ET.Element("routes")
     root.append(copy.deepcopy(route_elem))
-    ET.indent(root, space="  ")
+    try:
+        ET.indent(root, space="  ")
+    except AttributeError:
+        def _indent(elem: ET.Element, level: int = 0) -> None:
+            indent = "\n" + level * "  "
+            if len(elem):
+                if not elem.text or not elem.text.strip():
+                    elem.text = indent + "  "
+                for child in elem:
+                    _indent(child, level + 1)
+                if not child.tail or not child.tail.strip():
+                    child.tail = indent
+            elif level and (not elem.tail or not elem.tail.strip()):
+                elem.tail = indent
+
+        _indent(root)
     xml_text = ET.tostring(root, encoding="unicode")
     output_path.write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_text + "\n",

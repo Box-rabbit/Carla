@@ -44,6 +44,8 @@ INTENT_ALIASES = {
     "AVOID_CONSTRUCTION": {"AVOID_CONSTRUCTION", "CONSTRUCTION_MERGE_LEFT", "LANE_CHANGE_LEFT", "SLOW_DOWN"},
     "CONSTRUCTION_MERGE_LEFT": {"CONSTRUCTION_MERGE_LEFT", "AVOID_CONSTRUCTION", "LANE_CHANGE_LEFT", "SLOW_DOWN"},
     "LANE_CHANGE_RIGHT": {"LANE_CHANGE_RIGHT", "RETURN_TO_LANE"},
+    "PARK": {"PARK", "STOP", "PARKING"},
+    "STOP": {"STOP", "PARK", "PARKING"},
 }
 
 
@@ -68,6 +70,8 @@ ACTION_WINDOW_HINTS = {
     "emergency": {"CUT_IN_CAUTION", "EMERGENCY_BRAKE", "SLOW_DOWN"},
     "construction": {"AVOID_CONSTRUCTION", "CONSTRUCTION_MERGE_LEFT", "LANE_CHANGE_LEFT", "SLOW_DOWN"},
     "merge_left": {"CONSTRUCTION_MERGE_LEFT", "LANE_CHANGE_LEFT", "SLOW_DOWN"},
+    "park": {"PARK", "STOP", "PARKING"},
+    "parking": {"PARK", "STOP", "PARKING"},
 }
 
 
@@ -249,6 +253,10 @@ def _build_event_candidates(annotations, routes, lead_distance_m):
             continue
 
         cfg = _load_yaml(config_path)
+        voice_assets_cfg = cfg.get("voice_assets", {})
+        excluded_audio_ids = {
+            str(item) for item in voice_assets_cfg.get("excluded_audio_ids", [])
+        }
         for action_id, action_cfg in (cfg.get("action_windows") or {}).items():
             if action_id == "auto_from_route" or not isinstance(action_cfg, dict):
                 continue
@@ -287,6 +295,7 @@ def _build_event_candidates(annotations, routes, lead_distance_m):
                 "action_progress_start_m": progress_start,
                 "voice_lead_distance_m": float(lead_distance_m),
                 "score_bias": 2,
+                "excluded_audio_ids": excluded_audio_ids,
             })
     return candidates
 
@@ -352,6 +361,28 @@ def _match_records(records, candidates, prefer_route_id=None, prefer_route_hard=
             ]
             if preferred:
                 candidate_pool = preferred
+
+        excluded_audio_ids = {
+            audio_id
+            for candidate in candidate_pool
+            for audio_id in candidate.get("excluded_audio_ids", set())
+        }
+        if record["audio_id"] in excluded_audio_ids:
+            matches.append({
+                "audio_id": record["audio_id"],
+                "status": "legacy_not_used",
+                "scenario_id": next(
+                    (
+                        item.get("scenario_id")
+                        for item in candidate_pool
+                        if item.get("scenario_id")
+                    ),
+                    None,
+                ),
+                "reason": "excluded by the active scenario voice_assets policy",
+                "voice": record,
+            })
+            continue
 
         scored = []
         for candidate in candidate_pool:
@@ -456,11 +487,16 @@ def main(argv=None):
         yaml.safe_dump(output, f, allow_unicode=True, sort_keys=False)
 
     matched_count = sum(1 for item in matches if item["status"] == "matched")
+    legacy_count = sum(1 for item in matches if item["status"] == "legacy_not_used")
     print(
         "[DONE] matched "
-        f"{matched_count}/{len(matches)} voice records -> {output_path.as_posix()}"
+        f"{matched_count}/{len(matches)} voice records "
+        f"(legacy_not_used={legacy_count}) -> {output_path.as_posix()}"
     )
     for item in matches:
+        if item["status"] == "legacy_not_used":
+            print(f"  - {item['audio_id']}: legacy_not_used")
+            continue
         if item["status"] != "matched":
             print(f"  - {item['audio_id']}: unmatched")
             continue
@@ -469,7 +505,7 @@ def main(argv=None):
             f"{item['audio_id']} -> {item['route_id']}::{item['event_id']} "
             f"at {item['trigger'].get('distance_m', item['trigger'].get('value'))}m"
         )
-    return 0 if matched_count == len(matches) else 1
+    return 0 if matched_count + legacy_count == len(matches) else 1
 
 
 if __name__ == "__main__":

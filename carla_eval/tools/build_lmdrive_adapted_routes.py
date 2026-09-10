@@ -194,7 +194,7 @@ def _write_validation(path: Path, route_cfg: Dict[str, Any], source_length_m: fl
         ),
         "lane_changes": list(route_cfg.get("lane_changes", [])),
         "validation_status": "offline_geometry_checked",
-        "carla_lane_validation": "pending_carla_python_0.9.10_environment",
+        "carla_lane_validation": "pending_runtime_carla_python_0.9.15",
     }
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 

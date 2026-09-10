@@ -1,0 +1,76 @@
+[
+  {
+    "event": "instruction_triggered",
+    "timestamp": null,
+    "instruction_id": "s11_keep_lane_01",
+    "trigger_type": null,
+    "trigger_distance_m": null,
+    "route_distance_to_trigger_anchor_m": null,
+    "voice_backend": null,
+    "voice_backend_mode": null,
+    "voice_backend_status": null,
+    "voice_error": null,
+    "voice_input_mode": null,
+    "voice_audio_path": null,
+    "recognized_text": null,
+    "recognized_intents": null,
+    "expected_intents": null,
+    "intent_match": null,
+    "voice_target_speed_max_kmh": null,
+    "expected_target_speed_max_kmh": null,
+    "voice_no_collision": null,
+    "expected_no_collision": null
+  },
+  {
+    "event": "speed_60_reached",
+    "timestamp": 51.35,
+    "target_speed_kmh": 60.0,
+    "actual_speed_kmh": 62.74104271806091,
+    "progress_m": 672.258471741747,
+    "hold_time_s": 1.0000000000000002,
+    "required_hold_seconds": 1.0
+  },
+  {
+    "event": "right_turn_completed",
+    "timestamp": 64.7,
+    "progress_m": 900.5134450767963,
+    "heading_change_deg": -30.50141143798828,
+    "required_heading_change_deg_min": 30.0
+  },
+  {
+    "event": "task_failure",
+    "timestamp": 102.05000000000001,
+    "success": false,
+    "failure_reason": "route_deviation"
+  },
+  {
+    "event": "left_turn_completed",
+    "timestamp": 102.95,
+    "progress_m": 1332.4117534492543,
+    "heading_change_deg": 31.87306785583496,
+    "required_heading_change_deg_min": 30.0
+  },
+  {
+    "event": "speed_30_reached",
+    "timestamp": 325.20000000000005,
+    "target_speed_kmh": 30.0,
+    "actual_speed_kmh": 27.155780211427686,
+    "progress_m": 4075.1151072580765,
+    "hold_time_s": 2.000000000000001,
+    "required_hold_seconds": 2.0
+  },
+  {
+    "event": "long_route_completed",
+    "timestamp": 418.05,
+    "route_completion": 0.9819117008300784,
+    "max_route_progress_m": 4932.002997624425,
+    "route_total_length_m": 5022.8579550025315,
+    "required_route_length_m": 5000.0,
+    "target_progress_m": 4900.0
+  },
+  {
+    "event": "task_success",
+    "timestamp": 418.05,
+    "success": true
+  }
+]

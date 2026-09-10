@@ -1,0 +1,43 @@
+scenario_id: S12_complex_obstacle_scene2_8km
+version: v0.4
+platform:
+  carla: 0.9.15
+  benchmark: Bench2Drive/Leaderboard 2.0
+design_status: route_xml_validated_initial_straight_ready
+route_policy:
+  source: validated_route_xml_from_carla0915
+  reuse_old_route_xml: false
+  reuse_old_coordinates: false
+  reuse_old_reference_trajectory: false
+  target_length_m: 8200
+  acceptable_length_range_m: [7800, 8600]
+  initial_quiet_distance_m: 203
+  initial_quiet_requirement_met: true
+  minimum_scene_spacing_m: 200
+  required_features:
+    - straight
+    - left_turn
+    - multi_lane_segment
+    - bus_stop_area
+    - final_parking_area
+validation_order:
+  - generate_global_route
+  - verify_agent_completes_before_scene_placement
+  - place_traffic_scenes
+  - define_voice_tasks_from_real_route_features
+  - tune_voice_and_scene_distribution
+voice_plan:
+  count: 3
+  minimum_count: 3
+  maximum_count: 3
+  trigger_progress_m: [280, 1090, 1720]
+  minimum_spacing_m: 200
+  tasks:
+    - pedestrian_caution
+    - overtake_slow_vehicle
+    - bus_stop_caution
+voice_assets:
+  legacy_recordings:
+    status: retained_for_matching
+    reason: Existing S12 recordings already match the obstacle flow and do not use the old dense-reference repair style.
+  new_recordings_required: 0

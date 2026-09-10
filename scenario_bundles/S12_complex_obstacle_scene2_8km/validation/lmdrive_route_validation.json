@@ -2,10 +2,10 @@
   "scenario_id": "S12_complex_obstacle_scene2_8km",
   "route_variant": "lmdrive_adapted",
   "source_route": "routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml",
-  "source_length_m": 8082.943,
-  "interpolated_length_m": 8079.689,
-  "waypoint_count": 819,
-  "max_adjacent_gap_m": 10.0,
+  "source_length_m": 8187.053,
+  "interpolated_length_m": 8185.792,
+  "waypoint_count": 829,
+  "max_adjacent_gap_m": 10.39,
   "lane_changes": [
     {
       "id": "overtake_left",
@@ -25,5 +25,5 @@
     }
   ],
   "validation_status": "offline_geometry_checked",
-  "carla_lane_validation": "pending_carla_python_0.9.10_environment"
+  "carla_lane_validation": "pending_runtime_carla_python_0.9.15"
 }

@@ -2,17 +2,55 @@
   "scenario_id": "S13_extreme_emergency_scene3_6km",
   "route_id": "S13_extreme_emergency_scene3_6km",
   "town": "Town05",
-  "category": "emergency_response",
-  "carla_version": "0.9.10.1",
+  "carla_version": "0.9.15",
+  "validation_date": "2026-07-20",
   "validation_passed": true,
-  "validation_note": "Dense route is a 6km trimmed prefix of the validated S12 Town05 route, reused for PDF scene-3 emergency integration.",
-  "route": {
-    "source_mode": "route_xml",
-    "exported_mode": "route_xml_dense_validated_trimmed",
-    "waypoint_count": 3154,
-    "interpolated_length_m": 6001.732,
-    "target_length_m": 6000.0,
-    "max_adjacent_gap_m": 2.386,
-    "mean_adjacent_gap_m": 1.903
+  "source_mode": "carla_lane_trace",
+  "raw_point_count": 3156,
+  "waypoint_count": 3156,
+  "interpolated_length_m": 6000.403,
+  "max_adjacent_gap_m": 2.386,
+  "mean_adjacent_gap_m": 1.902,
+  "min_adjacent_gap_m": 1.528,
+  "max_snap_distance_m": 0.4157,
+  "target_length_m": 6000.0,
+  "start_waypoint": {
+    "x": 28.679,
+    "y": -177.479,
+    "z": 0.5
+  },
+  "end_waypoint": {
+    "x": 107.807,
+    "y": 187.732,
+    "z": 0.5
+  },
+  "detected_turns": [
+    {
+      "progress_m": 348.2,
+      "direction": "left",
+      "heading_delta_deg": 25.3,
+      "x": 24.544,
+      "y": 170.641
+    }
+  ],
+  "lane_key_samples": {
+    "first": {
+      "road_id": 2057,
+      "section_id": 0,
+      "lane_id": 1,
+      "is_junction": true
+    },
+    "middle": {
+      "road_id": 38,
+      "section_id": 0,
+      "lane_id": 4,
+      "is_junction": false
+    },
+    "last": {
+      "road_id": 38,
+      "section_id": 0,
+      "lane_id": 4,
+      "is_junction": false
+    }
   }
 }

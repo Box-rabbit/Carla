@@ -541,6 +541,43 @@ def load_route_waypoints(cfg):
     return []
 
 
+def build_route_waypoints_from_config(carla_map, cfg):
+    route_cfg = cfg.get("route", {})
+    mode = route_cfg.get("mode")
+    if mode in {"global_route", "carla_runtime_planner"}:
+        return build_planned_route_waypoints(carla_map, cfg)
+    if mode == "carla_lane_trace":
+        return build_lane_trace_route_waypoints(carla_map, cfg)
+    return load_route_waypoints(cfg)
+
+
+def make_route_start_transform_from_config(carla_map, cfg):
+    spawn = make_transform_from_config(cfg)
+    route_cfg = cfg.get("route", {})
+    global_route_cfg = route_cfg.get("global_route", {})
+    if not bool(global_route_cfg.get("align_spawn_to_route_start", True)):
+        return spawn
+
+    route_points = build_route_waypoints_from_config(carla_map, cfg)
+    if len(route_points) < 2:
+        return spawn
+
+    spawn_offset_m = max(0.0, float(global_route_cfg.get("spawn_offset_m", 12.0)))
+    tracker = RouteTracker(carla_map, route_points)
+    sample_loc = tracker.point_at_progress(spawn_offset_m)
+    waypoint = carla_map.get_waypoint(
+        sample_loc,
+        project_to_road=True,
+        lane_type=carla.LaneType.Driving,
+    )
+    if waypoint is None:
+        return spawn
+
+    aligned = waypoint.transform
+    aligned.location.z = max(float(spawn.location.z), aligned.location.z + 0.5)
+    return aligned
+
+
 def route_length_from_points(points):
     if len(points) < 2:
         return 0.0
@@ -607,12 +644,12 @@ def estimate_forward_route_length(carla_map, spawn_transform, step_m=2.0, max_di
     return max(total, step_m)
 
 
-def load_world_for_config(client, cfg):
+def load_world_for_config(client, cfg, reset_settings=False):
     desired_town = cfg.get("map", {}).get("town")
     world = client.get_world()
 
     if desired_town and not world.get_map().name.endswith(desired_town):
-        world = client.load_world(desired_town)
+        world = client.load_world(desired_town, reset_settings)
     return world
 
 
@@ -787,7 +824,7 @@ class RouteTracker:
     @classmethod
     def from_route_config(cls, carla_map, cfg, corridor_half_width_m=4.5):
         route_cfg = cfg.get("route", {})
-        if route_cfg.get("mode") == "carla_runtime_planner":
+        if route_cfg.get("mode") in {"global_route", "carla_runtime_planner"}:
             route_points = build_planned_route_waypoints(carla_map, cfg)
         elif route_cfg.get("mode") == "carla_lane_trace":
             route_points = build_lane_trace_route_waypoints(carla_map, cfg)

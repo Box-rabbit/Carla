@@ -1,6 +1,7 @@
 PYTHON ?= python
 
 .PHONY: list validate-pdf validate-s11 validate-s12 validate-s13 \
+        validate-delivery \
         build-lmdrive-routes match-audio bundle-s11 bundle-s12 bundle-s13 \
         report-s11 report-s12 report-s13
 
@@ -8,6 +9,9 @@ list:
 	$(PYTHON) carla_eval/run_benchmark.py --list
 
 validate-pdf: validate-s11 validate-s12 validate-s13
+
+validate-delivery:
+	bash scripts/validate_scene_delivery.sh
 
 validate-s11:
 	$(PYTHON) carla_eval/validate_config.py --config configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml

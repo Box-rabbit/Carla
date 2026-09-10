@@ -241,6 +241,12 @@ class EmergencyResponseScene3(BaseScenario):
         for actor_cfg in cfg.get("actors", {}).get("pedestrians", []):
             stage = str(actor_cfg.get("stage", actor_cfg.get("id", "pedestrian")))
             self._actor_cfg_by_stage[stage] = actor_cfg
+            # Construction workers are spawned by _update_worker() only when
+            # the ego reaches the configured construction activation window.
+            # Keeping them offstage prevents route self-overlaps from making
+            # a later scene visible far before its progress trigger.
+            if stage == "construction_worker":
+                continue
             progress_m = float(actor_cfg.get("progress_m", 0.0))
             lateral_offset_m = float(actor_cfg.get("lateral_offset_m", 0.0))
             bp = self._find_blueprint(

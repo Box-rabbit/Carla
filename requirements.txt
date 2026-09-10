@@ -1,4 +1,4 @@
-# Install the CARLA Python API from the matching CARLA 0.9.10.1 distribution.
+# Install the CARLA Python API from the matching CARLA 0.9.15 distribution.
 # It is not published here because its wheel is platform and Python-version specific.
 PyYAML>=6.0,<7.0
 numpy>=1.23,<3.0

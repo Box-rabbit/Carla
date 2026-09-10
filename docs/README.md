@@ -6,8 +6,10 @@
 2. [scenario_design/pdf_three_scenarios_delivery.md](scenario_design/pdf_three_scenarios_delivery.md)
 3. [pipeline/lmdrive_style_benchmark.md](pipeline/lmdrive_style_benchmark.md)
 4. [scenario_delivery/standalone_bundle_workflow.md](scenario_delivery/standalone_bundle_workflow.md)
-5. [../configs/README.md](../configs/README.md)
-6. [../routes/README.md](../routes/README.md)
+5. [scenario_delivery/control_side_delivery.md](scenario_delivery/control_side_delivery.md)
+6. [scenario_delivery/delivery_manifest.yaml](scenario_delivery/delivery_manifest.yaml)
+7. [../configs/README.md](../configs/README.md)
+8. [../routes/README.md](../routes/README.md)
 
 目录说明：
 

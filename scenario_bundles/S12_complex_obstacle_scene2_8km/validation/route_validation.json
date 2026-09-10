@@ -2,22 +2,30 @@
   "scenario_id": "S12_complex_obstacle_scene2_8km",
   "route_id": "S12_complex_obstacle_scene2_8km",
   "town": "Town05",
-  "carla_version": "0.9.10.1",
-  "validation_date": "2026-07-21",
+  "carla_version": "0.9.15",
+  "validation_date": "2026-09-07",
+  "record_review_date": "2026-09-08",
   "validation_passed": true,
-  "validation_note": "Dense route is a suffix of the CARLA-validated S12 Town05 lane_trace XML, trimmed to remove adjacent turn tasks closer than 100m near the original start.",
-  "source_mode": "route_xml_dense_validated_trimmed",
-  "raw_point_count": 4249,
-  "waypoint_count": 4249,
-  "interpolated_length_m": 8082.943,
+  "validation_note": "Dense route is the CARLA-0.9.15 S12 Town05 route. The current route has 203.0m of straight driving from the spawn waypoint to the first detected turn, satisfying the 200m quiet-start requirement.",
+  "source_mode": "route_xml_dense_validated_prefixed",
+  "raw_point_count": 4301,
+  "waypoint_count": 4301,
+  "interpolated_length_m": 8186.943,
   "max_adjacent_gap_m": 2.386,
-  "mean_adjacent_gap_m": 1.903,
+  "mean_adjacent_gap_m": 1.904,
   "min_adjacent_gap_m": 1.337,
-  "target_length_m": 8080.0,
+  "target_length_m": 8200.0,
   "start_waypoint": {
-    "x": 151.307,
-    "y": 5.843,
+    "x": 150.638,
+    "y": -98.155,
     "z": 0.5
+  },
+  "spawn_alignment": {
+    "config_spawn_matches_route_start": true,
+    "horizontal_offset_m": 0.0,
+    "yaw_deg": 89.6,
+    "validation_scope": "static_config_xml_check",
+    "runtime_recheck_required": true
   },
   "end_waypoint": {
     "x": 189.219,
@@ -26,21 +34,21 @@
   },
   "detected_turns": [
     {
-      "progress_m": 99.0,
+      "progress_m": 203.0,
       "direction": "left",
       "heading_delta_deg": 25.2,
       "x": 148.288,
       "y": 104.399
     },
     {
-      "progress_m": 210.8,
+      "progress_m": 314.8,
       "direction": "left",
       "heading_delta_deg": 30.4,
       "x": 50.214,
       "y": 141.786
     },
     {
-      "progress_m": 536.0,
+      "progress_m": 640.0,
       "direction": "left",
       "heading_delta_deg": 31.4,
       "x": 39.016,
@@ -52,7 +60,10 @@
     111.8,
     325.2
   ],
-  "trimmed_from_original_progress_m": 217.546,
+  "initial_quiet_distance_m": 203.0,
+  "initial_quiet_requirement_m": 200.0,
+  "initial_quiet_requirement_met": true,
+  "prefixed_from_original_start_m": 104.0,
   "scenario_window_notes": {
     "slow_vehicle_overtake": {
       "progress_start_m": 800.0,
@@ -75,5 +86,22 @@
       "anchor_progress_m": 2000.0,
       "progress_end_m": 2200.0
     }
+  },
+  "runtime_validation": {
+    "validation_date": "2026-09-09",
+    "carla_version": "0.9.15",
+    "log_id": "S12_complex_obstacle_scene2_8km_snapped",
+    "route_completed": true,
+    "route_completion": 0.9846776281,
+    "collision_count": 0,
+    "route_deviation_count": 0,
+    "red_light_violation_count": 0,
+    "lane_invasion_activation_count": 9,
+    "solid_lane_invasion_count": 4,
+    "broken_lane_invasion_count": 5,
+    "scene_subtasks_completed": true,
+    "scene_result": "blocked_by_control_side_solid_lane_invasion",
+    "scene_side_assessment": "The XML route is aligned to the CARLA 0.9.15 driving-lane centerline at the first left turn. Solid-line crossings occur while the controller enters that turn at approximately 47 km/h; removing them requires controller-side turn speed/steering behavior or a different global route, not actor placement changes.",
+    "broken_marking_assessment": "The five Broken events occur during the configured left overtake and return-to-lane maneuver and are expected lane-invasion sensor events for a lane change."
   }
 }

@@ -1,14 +1,17 @@
 scenario_id: S13_extreme_emergency_scene3_6km
 category: emergency_response
-version: v0.1-integrated-scene3-offline
-description: PDF 场景3极限应急语音操控工况；雨夜低能见度的 Town05 6km 连续驾驶，串联突发车辆加塞应急制动与施工锥桶并道通过。
+version: v0.4-carla0915-global-route-s13
+description: S13 极限应急场景 v0.4；CARLA 0.9.15 + Bench2Drive/Leaderboard 2.0 设计契约。路线先由
+  Global Route 确定并验证完整可行，再沿路线布置突发加塞和施工并道任务；旧版 route XML、坐标和
+  reference trajectory 不属于本版本真源。
 runtime:
   random_seed: 42
-  carla_version: 0.9.10.1
+  carla_version: 0.9.15
   fixed_delta_seconds: 0.05
   max_duration_seconds: 900
   post_success_hold_seconds: 5.0
   background_vehicles: 0
+  benchmark_stack: Bench2Drive/Leaderboard 2.0
 map:
   town: Town05
   weather: CustomHardRainNight
@@ -29,17 +32,53 @@ traffic_conditions:
 ego:
   vehicle_type: vehicle.tesla.model3
   spawn_point:
-    x: 151.307
-    y: 5.843
+    x: 28.700
+    y: -177.400
     z: 0.3
-    yaw: 88.6
+    yaw: 91.5
 route:
-  mode: route_xml
+  mode: carla_lane_trace
   route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km.xml
   route_id: S13_extreme_emergency_scene3_6km
   design_route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km.xml
   lmdrive_route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km_lmdrive.xml
   lmdrive_route_id: S13_extreme_emergency_scene3_6km
+  source_policy: validated_route_xml_from_carla0915
+  lane_trace:
+    align_spawn_to_lane: true
+    start:
+      x: 28.700
+      y: -177.400
+      z: 0.5
+    step_m: 2.0
+    target_length_m: 6000.0
+    max_steps: 7000
+    junction_decisions:
+    - straight
+    - left
+    - straight
+    - right
+    - straight
+    - left
+    - straight
+    - right
+    - straight
+    - left
+    - straight
+    - right
+  global_route:
+    planner: CARLA lane trace / Global Route validation
+    sampling_resolution_m: 2.0
+    target_length_m: 6000.0
+    length_tolerance_m: 300.0
+    start_must_be_straight_for_m: 200.0
+    spawn_offset_m: 18.0
+    min_scene_spacing_m: 200.0
+    align_spawn_to_route_start: true
+    route_selection:
+      verify_agent_can_complete_before_scene_placement: true
+      require_drivable_waypoints: true
+      reject_reference_trajectory_override: true
 controller:
   cruise_target_speed_kmh: 50.0
   cruise_lookahead_m: 14.0

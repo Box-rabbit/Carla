@@ -1,0 +1,54 @@
+delivery:
+  name: dongfeng_scene_side_delivery
+  version: "2026-09-11"
+  responsibility: scene_side
+  handoff_target: control_side_simlingo
+  platform:
+    carla: "0.9.15"
+    benchmark: "Leaderboard 2.0"
+    map: Town05
+    python_environment: /data/hdt_workspace/my_env/carla0915
+  official_entry:
+    route_file: routes/dongfeng_leaderboard_2.0.xml
+    agent_file: leaderboard_agents/dongfeng_agent.py
+    agent_config: configs/leaderboard/agent_config.yaml
+    environment_script: scripts/env_carla0915.sh
+    launch_script: scripts/run_official_leaderboard.sh
+    validation_script: scripts/validate_scene_delivery.sh
+  route_ids:
+    - S11_basic_control_scene1_5km
+    - S12_complex_obstacle_scene2_8km
+    - S13_extreme_emergency_scene3_6km
+  scenario_implementation:
+    file: third_party/scenario_runner/srunner/scenarios/dongfeng_route_scenarios.py
+    s11:
+      official_scenario_count: 0
+      note: Global Route and weather only; no custom actor scenario is required.
+    s12:
+      official_scenario_count: 4
+      route_progress_m: [360.0, 1050.0, 1250.0, 1850.0]
+    s13:
+      official_scenario_count: 2
+      route_progress_m: [1220.0, 2520.0]
+  simlingo_interface:
+    environment_variable: DONGFENG_POLICY_MODULE
+    factory: build_agent(config_path)
+    step_method: run_step(input_data, timestamp, global_plan_world_coord)
+    cleanup_method: destroy()
+    control_outputs:
+      - carla.VehicleControl
+      - "{throttle, brake, steer}"
+  validation:
+    static_contract: passed
+    official_route_parser: passed
+    s12_actor_smoke_test: passed
+    s13_actor_smoke_test: passed
+    full_simlingo_route: pending_control_side
+    voice_closed_loop: pending_data_and_control_side
+  excluded_from_official_entry:
+    - carla_eval/run_benchmark.py
+    - routes/dongfeng_benchmark.xml
+    - routes/dongfeng_lmdrive_benchmark.xml
+    - carla_eval/run_carla_s11_basic_control_scene1.py
+    - carla_eval/run_carla_s12_complex_obstacle_scene2.py
+    - carla_eval/run_carla_s13_extreme_emergency_scene3.py

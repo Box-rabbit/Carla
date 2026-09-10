@@ -25,20 +25,26 @@ def _bootstrap_carla_pythonapi() -> None:
 
     env_root = os.environ.get("CARLA_ROOT")
     if env_root:
-        candidates.append(
-            Path(env_root)
-            / "PythonAPI/carla/dist"
-            / f"carla-0.9.10-{py_tag}-linux-x86_64.egg"
-        )
+        root = Path(env_root)
+        for version in ("0.9.15", "0.9.10"):
+            candidates.extend([
+                root / "carla/dist" / f"carla-{version}-{py_tag}-linux-x86_64.egg",
+                root / "PythonAPI/carla/dist" / f"carla-{version}-{py_tag}-linux-x86_64.egg",
+            ])
 
     default_roots = [
+        Path("/data/hdt_workspace/CARLA_0.9.15"),
         Path("/data/hdt_workspace/CARLA_0.9.10.1"),
+        Path.home() / "CARLA_0.9.15",
         Path.home() / "CARLA_0.9.10.1",
     ]
     for root in default_roots:
-        candidates.append(
-            root / "PythonAPI/carla/dist" / f"carla-0.9.10-{py_tag}-linux-x86_64.egg"
-        )
+        candidates.extend([
+            root / "carla/dist" / f"carla-0.9.15-{py_tag}-linux-x86_64.egg",
+            root / "carla/dist" / f"carla-0.9.10-{py_tag}-linux-x86_64.egg",
+            root / "PythonAPI/carla/dist" / f"carla-0.9.15-{py_tag}-linux-x86_64.egg",
+            root / "PythonAPI/carla/dist" / f"carla-0.9.10-{py_tag}-linux-x86_64.egg",
+        ])
 
     for candidate in candidates:
         if candidate.exists():

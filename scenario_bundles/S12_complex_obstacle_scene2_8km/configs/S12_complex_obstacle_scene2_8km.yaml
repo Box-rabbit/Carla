@@ -1,14 +1,16 @@
 scenario_id: S12_complex_obstacle_scene2_8km
 category: complex_obstacle
-version: v0.2-integrated-scene2-offline-voice
-description: PDF 场景2复杂避障工况；阴天傍晚城市次干道长路线连续驾驶，串联行人减速、慢车左变道超越、公交站减速通过三段复合任务。
+version: v0.4-carla0915-global-route-s12
+description: S12 复杂避障场景 v0.4；CARLA 0.9.15 + Bench2Drive/Leaderboard 2.0 设计契约。路线先由
+  Global Route 确定并验证完整可行，再沿路线布置任务；旧版 route XML、坐标和 reference trajectory 不属于本版本真源。
 runtime:
   random_seed: 42
-  carla_version: 0.9.10.1
+  carla_version: 0.9.15
   fixed_delta_seconds: 0.05
   max_duration_seconds: 1200
   post_success_hold_seconds: 5.0
   background_vehicles: 0
+  benchmark_stack: Bench2Drive/Leaderboard 2.0
 map:
   town: Town05
   weather: CloudySunset
@@ -20,10 +22,10 @@ traffic_conditions:
 ego:
   vehicle_type: vehicle.tesla.model3
   spawn_point:
-    x: 151.307
-    y: 5.843
+    x: 151.099
+    y: -98.233
     z: 0.3
-    yaw: 88.6
+    yaw: 84.4
 route:
   mode: route_xml
   route_file: routes/S12_complex_obstacle_scene2_8km.xml
@@ -31,29 +33,27 @@ route:
   design_route_file: routes/S12_complex_obstacle_scene2_8km.xml
   lmdrive_route_file: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
   lmdrive_route_id: S12_complex_obstacle_scene2_8km
-  source_mode: carla_lane_trace
-  source_lane_trace:
-    align_spawn_to_lane: true
-    start:
-      x: 151.307
-      y: 5.843
-      z: 0.3
-    step_m: 2.0
-    target_length_m: 8080.0
-    max_steps: 5200
-    junction_decisions:
-    - left
+  source_policy: validated_route_xml_from_carla0915
+  global_route:
+    planner: GlobalRoutePlanner
+    sampling_resolution_m: 2.0
+    target_length_m: 8200.0
+    length_tolerance_m: 300.0
+    start_must_be_straight_for_m: 200.0
+    spawn_offset_m: 18.0
+    min_scene_spacing_m: 200.0
+    align_spawn_to_route_start: true
+    required_route_features:
     - straight
-    - right
-    - straight
-    - straight
-    - left
-    - straight
-    - right
-    - straight
-    - left
-    - straight
-    - right
+    - left_turn
+    - multi_lane_segment
+    - bus_stop_area
+    - final_parking_area
+    route_selection:
+      verify_agent_can_complete_before_scene_placement: true
+      max_route_deviation_m: 4.0
+      require_drivable_waypoints: true
+      reject_reference_trajectory_override: true
 controller:
   initial_target_speed_kmh: 50.0
   cruise_target_speed_kmh: 50.0

@@ -15,27 +15,33 @@
 - Scenario id: `S11_basic_control_scene1_5km`
 - Category: `basic_control`
 - Map: `Town05`
-- Length: about `5.28 km`
+- Length target: `5.00 km` (`4.75-5.25 km` accepted during route validation)
 - Config: `configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml`
-- Route XML: `routes/basic_control/S11_basic_control_scene1_5km.xml`
+- Global Route design: `docs/scenario_design/s11_global_route_design_v04.yaml`
 - Voice package: `data/audio/S11/20260715/`
 - Bundle: `scenario_bundles/S11_basic_control_scene1_5km/`
 
-Voice triggers:
+v0.4 design requirements:
 
-- `55 m`: right turn
-- `145 m`: left turn
-- `380 m`: lane change left
-- `1460 m`: accelerate to 80 km/h
-- `2860 m`: slow down to 30 km/h
+- CARLA `0.9.15` with Bench2Drive/Leaderboard 2.0
+- Global Route must be generated and agent-validated before actors and voice tasks
+- Initial straight segment: at least `200 m`
+- Minimum distance between route scenes/tasks: `200 m`
+- Voice task targets: `250, 850, 1450, 2050, 2700, 3350, 4050, 4700 m`
+- Voice coverage: keep lane, accelerate, right turn, left turn, left lane change,
+  right lane change, slow down, final parking
+
+The previous S11 route XML and its reference trajectory remain legacy assets and
+are not the v0.4 route source.
 
 ## S12 场景2复杂避障
 
 - Scenario id: `S12_complex_obstacle_scene2_8km`
 - Category: `complex_obstacle`
 - Map: `Town05`
-- Length: about `8.08 km`
+- Length: about `8.19 km`
 - Config: `configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml`
+- Global Route design: `docs/scenario_design/s12_global_route_design_v04.yaml`
 - Dense route XML: `routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml`
 - LMDrive route XML: `routes/complex_obstacle/S12_complex_obstacle_scene2_8km_lmdrive.xml`
 - Voice package: `data/audio/S12/20260721/`
@@ -51,6 +57,9 @@ LMDrive route action alignment:
 
 - Overtake left lane change: `1130-1170 m`
 - Return right lane change: `1210-1255 m`
+
+The S12 v0.4 route source is the validated dense XML with an added initial
+straight prefix, so the start segment stays quiet before the first obstacle.
 
 ## S13 场景3极限应急语音操控
 

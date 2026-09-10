@@ -218,7 +218,7 @@ class BasicControlScene1(BaseScenario):
     - sunny daytime urban main road
     - no dynamic interference
     - 5km continuous driving
-    - right turn, left turn, left lane change, accelerate to 80km/h, slow to 30km/h
+    - right turn, left turn, both lane changes, speed changes, final parking
     """
 
     def spawn_actors(self, world, ego, cfg) -> List[carla.Actor]:
@@ -249,13 +249,19 @@ class BasicControlScene1(BaseScenario):
             "left_turn_completed_count": 0,
             "left_turn_total_count": 0,
             "speed_80_hold_s": 0.0,
+            "speed_60_hold_s": 0.0,
             "speed_30_hold_s": 0.0,
             "lane_change_hold_s": 0.0,
+            "lane_change_right_hold_s": 0.0,
+            "parking_hold_s": 0.0,
             "reach_target_speed_80": False,
+            "reach_target_speed_60": False,
             "complete_right_turn": False,
             "complete_left_turn": False,
             "complete_lane_change_left": False,
+            "complete_lane_change_right": False,
             "reach_target_speed_30": False,
+            "final_parking": False,
             "right_turn_entry_yaw": None,
             "right_turn_min_delta_deg": 0.0,
             "left_turn_entry_yaw": None,
@@ -355,9 +361,11 @@ class BasicControlScene1(BaseScenario):
         yaw = float(ego.get_transform().rotation.yaw)
         lateral_offset = float(obs["route_metrics"].get("lateral_offset_from_route_m", 0.0))
 
-        accel = windows.get("accelerate_to_80", {})
+        accel = windows.get("accelerate_to_60", windows.get("accelerate_to_80", {}))
         lane = windows.get("lane_change_left", {})
+        lane_right = windows.get("lane_change_right", {})
         slow = windows.get("slow_to_30", {})
+        parking = windows.get("final_parking", {})
         active_turn_candidates = []
         for turn_item in state.get("turn_windows", []):
             window = windows.get(turn_item["key"], turn_item)
@@ -370,14 +378,29 @@ class BasicControlScene1(BaseScenario):
             _, turn_key, turn_window = max(active_turn_candidates, key=lambda item: item[0])
             active_turn = (turn_key, turn_window)
 
-        lane_target_offset = float(lane.get("target_lateral_offset_m", 0.0))
-        state["target_lateral_offset_m"] = lane_target_offset if state["complete_lane_change_left"] else 0.0
+        lane_target_offset = float(lane.get("target_lateral_offset_m", -3.5))
+        lane_right_target_offset = float(lane_right.get("target_lateral_offset_m", 0.0))
+        active_lane = None
+        if lane_right.get("enabled", False) and _window_active(progress, lane_right):
+            active_lane = ("lane_change_right", lane_right)
+        elif lane.get("enabled", False) and _window_active(progress, lane):
+            active_lane = ("lane_change_left", lane)
+        state["target_lateral_offset_m"] = 0.0
+        if active_lane is not None:
+            state["target_lateral_offset_m"] = float(
+                active_lane[1].get(
+                    "target_lateral_offset_m",
+                    lane_right_target_offset if active_lane[0] == "lane_change_right" else lane_target_offset,
+                )
+            )
+        elif state["complete_lane_change_left"] and not state["complete_lane_change_right"]:
+            state["target_lateral_offset_m"] = lane_target_offset
         desired_speed = state["cruise_target_speed_kmh"]
         control_speed = desired_speed
 
         accel_active = accel.get("enabled", False) and (
             _window_active(progress, accel)
-            or (accel.get("hold_until_reached", False) and not state["reach_target_speed_80"])
+            or (accel.get("hold_until_reached", False) and not state["reach_target_speed_60"])
         )
 
         if active_turn is not None:
@@ -421,30 +444,40 @@ class BasicControlScene1(BaseScenario):
                 state["turn_completed"][turn_key] = True
 
         elif accel_active:
-            state["active_window"] = "accelerate_to_80"
-            desired_speed = float(accel.get("target_speed_kmh", 80.0))
+            state["active_window"] = "accelerate_to_60"
+            desired_speed = float(accel.get("target_speed_kmh", 60.0))
             control_speed = float(accel.get("control_target_speed_kmh", desired_speed))
             tol = float(accel.get("tolerance_kmh", 6.0))
             min_reached_speed = float(accel.get("min_reached_speed_kmh", desired_speed - tol))
             speed_reached = speed >= min_reached_speed or abs(speed - desired_speed) <= tol
-            state["speed_80_hold_s"] = state["speed_80_hold_s"] + dt if speed_reached else 0.0
-            if state["speed_80_hold_s"] >= float(accel.get("required_hold_seconds", 2.0)):
-                state["reach_target_speed_80"] = True
+            state["speed_60_hold_s"] = state["speed_60_hold_s"] + dt if speed_reached else 0.0
+            if state["speed_60_hold_s"] >= float(accel.get("required_hold_seconds", 2.0)):
+                state["reach_target_speed_60"] = True
 
-        elif lane.get("enabled", False) and _window_active(progress, lane):
-            state["active_window"] = "lane_change_left"
-            desired_speed = float(lane.get("target_speed_kmh", 40.0))
+        elif active_lane is not None:
+            lane_key, lane_window = active_lane
+            state["active_window"] = lane_key
+            desired_speed = float(lane_window.get("target_speed_kmh", 45.0))
             control_speed = desired_speed
-            state["target_lateral_offset_m"] = lane_target_offset
-            completion_progress = float(lane.get("progress_end_m", progress))
-            progress_margin = float(lane.get("completion_progress_margin_m", 25.0))
-            lane_centered = abs(lateral_offset) <= float(lane.get("completion_lateral_offset_m", 0.8))
-            if progress >= completion_progress - progress_margin and lane_centered:
-                state["lane_change_hold_s"] += dt
-            else:
-                state["lane_change_hold_s"] = 0.0
-            if state["lane_change_hold_s"] >= float(lane.get("required_hold_seconds", 1.0)):
-                state["complete_lane_change_left"] = True
+            completion_progress = float(lane_window.get("progress_end_m", progress))
+            progress_margin = float(lane_window.get("completion_progress_margin_m", 25.0))
+            lane_centered = abs(lateral_offset - state["target_lateral_offset_m"]) <= float(
+                lane_window.get("completion_lateral_offset_m", 0.8)
+            )
+            hold_key = (
+                "lane_change_right_hold_s"
+                if lane_key == "lane_change_right"
+                else "lane_change_hold_s"
+            )
+            state[hold_key] = state[hold_key] + dt if (
+                progress >= completion_progress - progress_margin and lane_centered
+            ) else 0.0
+            if state[hold_key] >= float(lane_window.get("required_hold_seconds", 1.0)):
+                state[
+                    "complete_lane_change_right"
+                    if lane_key == "lane_change_right"
+                    else "complete_lane_change_left"
+                ] = True
 
         elif slow.get("enabled", False) and _window_active(progress, slow):
             state["active_window"] = "slow_to_30"
@@ -456,6 +489,15 @@ class BasicControlScene1(BaseScenario):
             state["speed_30_hold_s"] = state["speed_30_hold_s"] + dt if abs(speed - desired_speed) <= tol else 0.0
             if state["speed_30_hold_s"] >= float(slow.get("required_hold_seconds", 2.0)):
                 state["reach_target_speed_30"] = True
+
+        elif parking.get("enabled", False) and _window_active(progress, parking):
+            state["active_window"] = "final_parking"
+            desired_speed = float(parking.get("target_speed_kmh", 0.0))
+            control_speed = desired_speed
+            stop_tolerance = float(parking.get("stop_speed_tolerance_kmh", 1.0))
+            state["parking_hold_s"] = state["parking_hold_s"] + dt if speed <= stop_tolerance else 0.0
+            if state["parking_hold_s"] >= float(parking.get("required_hold_seconds", 3.0)):
+                state["final_parking"] = True
 
         else:
             state["active_window"] = "cruise"
@@ -495,7 +537,7 @@ class BasicControlScene1(BaseScenario):
         max_progress = float(obs["route_metrics"].get("max_route_progress_m", progress))
         if (
             max_progress >= target_progress
-            and state["reach_target_speed_80"]
+            and state["reach_target_speed_60"]
             and state["complete_right_turn"]
             and state["complete_left_turn"]
             and (
@@ -503,7 +545,9 @@ class BasicControlScene1(BaseScenario):
                 or state["complete_all_route_turns"]
             )
             and state["complete_lane_change_left"]
+            and state["complete_lane_change_right"]
             and state["reach_target_speed_30"]
+            and state["final_parking"]
         ):
             state["success"] = True
 
@@ -512,6 +556,7 @@ class BasicControlScene1(BaseScenario):
     def compute_control(self, ego, actors, state, obs, cfg) -> Tuple[float, float, float]:
         route_tracker: RouteTracker = obs.get("route_tracker")
         progress = float(obs["route_metrics"]["route_progress_m"])
+        lateral_offset = float(obs["route_metrics"].get("lateral_offset_from_route_m", 0.0))
         ctrl = cfg.get("controller", {})
         smoothing_cfg = ctrl.get("target_point_smoothing", {})
         active = state.get("active_window", "cruise")
@@ -522,7 +567,7 @@ class BasicControlScene1(BaseScenario):
             max_steer = float(ctrl.get("turn_max_steer", ctrl.get("max_steer", 0.46)))
             window_radius = float(smoothing_cfg.get("turn_window_radius_m", 5.0))
             sigma = float(smoothing_cfg.get("turn_sigma_m", 2.5))
-        elif active == "lane_change_left":
+        elif active in {"lane_change_left", "lane_change_right"}:
             lookahead = float(ctrl.get("lane_change_lookahead_m", 10.0))
             gain = float(ctrl.get("lane_change_steer_gain", 1.25))
             max_steer = float(ctrl.get("lane_change_max_steer", 0.38))
@@ -552,6 +597,7 @@ class BasicControlScene1(BaseScenario):
             target_loc = ego.get_location()
 
         steer = compute_steer_to_location(ego, target_loc, gain=gain, max_steer=max_steer)
+
         throttle, brake = _compute_comfort_speed_control(
             speed_kmh=float(obs["speed_kmh"]),
             target_kmh=float(state.get("speed_control_target_kmh", state["target_speed_kmh"])),
@@ -571,9 +617,13 @@ class BasicControlScene1(BaseScenario):
             "target_lateral_offset_m": state["target_lateral_offset_m"],
             "active_window": state["active_window"],
             "speed_80_hold_time": state["speed_80_hold_s"],
+            "speed_60_hold_time": state["speed_60_hold_s"],
             "speed_30_hold_time": state["speed_30_hold_s"],
             "lane_change_hold_time": state["lane_change_hold_s"],
+            "lane_change_right_hold_time": state["lane_change_right_hold_s"],
+            "parking_hold_time": state["parking_hold_s"],
             "reach_target_speed_80": state["reach_target_speed_80"],
+            "reach_target_speed_60": state["reach_target_speed_60"],
             "complete_right_turn": state["complete_right_turn"],
             "complete_left_turn": state["complete_left_turn"],
             "complete_all_route_turns": state["complete_all_route_turns"],
@@ -583,7 +633,9 @@ class BasicControlScene1(BaseScenario):
             "left_turn_total_count": state["left_turn_total_count"],
             "turn_completed": dict(state.get("turn_completed", {})),
             "complete_lane_change_left": state["complete_lane_change_left"],
+            "complete_lane_change_right": state["complete_lane_change_right"],
             "reach_target_speed_30": state["reach_target_speed_30"],
+            "final_parking": state["final_parking"],
             "right_turn_min_delta_deg": state["right_turn_min_delta_deg"],
             "left_turn_max_delta_deg": state["left_turn_max_delta_deg"],
             "right_turn_window_source": state["right_turn_window_source"],

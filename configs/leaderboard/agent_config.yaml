@@ -1,0 +1,6 @@
+agent: leaderboard_agents/dongfeng_agent.py
+policy_module_env: DONGFENG_POLICY_MODULE
+track: SENSORS
+carla_version: 0.9.15
+benchmark: Leaderboard 2.0
+route_source: routes/dongfeng_leaderboard_2.0.xml

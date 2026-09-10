@@ -2,7 +2,7 @@ scenario_id: S12_complex_obstacle_scene2_8km
 route_id: S12_complex_obstacle_scene2_8km
 town: Town05
 category: complex_obstacle
-carla_version: 0.9.10.1
+carla_version: 0.9.15
 source:
   routes_file: routes/dongfeng_benchmark.xml
   annotations_file: configs/scenario_annotations/dongfeng_benchmark.yaml
@@ -20,7 +20,7 @@ files:
 route:
   source_mode: route_xml
   exported_mode: route_xml
-  waypoint_count: 4249
+  waypoint_count: 4301
   town: Town05
   category: complex_obstacle
   target_length_m: null
@@ -30,10 +30,10 @@ provenance:
   generator: carla_eval/tools/export_standalone_scenario_bundle.py
   generator_command: python carla_eval/tools/export_standalone_scenario_bundle.py
     --scenario-id S12_complex_obstacle_scene2_8km
-  source_git_revision: 13b22ecb62d68ec03de04fa7701422c77bb3a3af
+  source_git_revision: a0bda7edbb96077e618b53e8540ebbb20fd7272a
   source_checksums_sha256:
-    routes/dongfeng_benchmark.xml: 3bc9cf0a84fa8ef2ee60e3541651db36ab3a2f6f066be4a59c6e059d972c400c
-    configs/scenario_annotations/dongfeng_benchmark.yaml: 111a4391a3fe5419e071ad2c6ee8c298ac19120ec946d2d7ab6cf6a0d7a78c5e
-    configs/lmdrive/route_audio_matches.yaml: 043a2b02888baa77c1193e476c235f2e12d247263c4b21b4346c0a75e5833672
-    configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml: 4eb9b67ce7798a1b24d2a5d8b7e3453b842e428b36fb3b97c2ce6c9832416e51
+    routes/dongfeng_benchmark.xml: 1429f8de150a0fb3a67ca6874f000c7b049da8b6e21f350975937193b97eff9f
+    configs/scenario_annotations/dongfeng_benchmark.yaml: 31d4d280f8475a339b7862a7973d6f47ca0809a516e29f075d31bf30234d93d1
+    configs/lmdrive/route_audio_matches.yaml: 6c2511b974ed820f91fb91680d1ffa33b93076b9f3764285a6a5c1fc1be08e7a
+    configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml: f8b877987a5ca337673089c6b6088fb2207c20ae0a9b4b7a104c112bafd068d5
     configs/lmdrive/route_action_alignment.yaml: 8834c3dcc93af1bfc6babbcbad0aeeeb6b6edf069a71d435241466d53b48135c

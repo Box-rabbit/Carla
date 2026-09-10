@@ -2,7 +2,7 @@ scenario_id: S11_basic_control_scene1_5km
 route_id: S11_basic_control_scene1_5km
 town: Town05
 category: basic_control
-carla_version: 0.9.10.1
+carla_version: 0.9.15
 source:
   routes_file: routes/dongfeng_benchmark.xml
   annotations_file: configs/scenario_annotations/dongfeng_benchmark.yaml
@@ -11,28 +11,25 @@ source:
 files:
   route_xml: routes/S11_basic_control_scene1_5km.xml
   scenario_config: configs/S11_basic_control_scene1_5km.yaml
-  annotations: configs/S11_basic_control_scene1_5km.annotations.json
+  annotations: configs/S11_basic_control_scene1_5km.annotations.yaml
   voice_matches: configs/route_audio_matches_S11_basic_control_scene1_5km.yaml
   validation: validation/route_validation.json
 route:
-  source_mode: carla_lane_trace
+  source_mode: route_xml
   exported_mode: route_xml
-  waypoint_count: 2728
+  waypoint_count: 1716
   town: Town05
   category: basic_control
-  target_length_m: 5200.0
+  target_length_m: null
 annotations:
-  format: json
+  format: yaml
 provenance:
   generator: carla_eval/tools/export_standalone_scenario_bundle.py
   generator_command: python carla_eval/tools/export_standalone_scenario_bundle.py
     --scenario-id S11_basic_control_scene1_5km
-  source_git_revision: 13b22ecb62d68ec03de04fa7701422c77bb3a3af
+  source_git_revision: a0bda7edbb96077e618b53e8540ebbb20fd7272a
   source_checksums_sha256:
-    routes/dongfeng_benchmark.xml: 3bc9cf0a84fa8ef2ee60e3541651db36ab3a2f6f066be4a59c6e059d972c400c
-    configs/scenario_annotations/dongfeng_benchmark.yaml: 111a4391a3fe5419e071ad2c6ee8c298ac19120ec946d2d7ab6cf6a0d7a78c5e
-    configs/lmdrive/route_audio_matches.yaml: 043a2b02888baa77c1193e476c235f2e12d247263c4b21b4346c0a75e5833672
-    configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml: e0b0be930eda3b8c1093ca458ca69e6c62d0852b0f0f52795ce49b4537e7188b
-notes:
-- The source scenario YAML retains runtime route parameters for legacy CARLA runner
-  compatibility; the bundle uses the selected route XML.
+    routes/dongfeng_benchmark.xml: 0798860215e2056cd09215cdcece3890628700aa11ac979d1cf8850d8e373b67
+    configs/scenario_annotations/dongfeng_benchmark.yaml: 31d4d280f8475a339b7862a7973d6f47ca0809a516e29f075d31bf30234d93d1
+    configs/lmdrive/route_audio_matches.yaml: 6c2511b974ed820f91fb91680d1ffa33b93076b9f3764285a6a5c1fc1be08e7a
+    configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml: 3e16dbe1ec88a56e2397005ec0432a5b211809ad6ec4376c34b72b540cde214a

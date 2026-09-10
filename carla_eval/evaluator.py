@@ -29,6 +29,7 @@ from carla_eval.runtime_metrics import (
     get_controller_param,
     get_instruction_trigger_time,
     load_world_for_config,
+    make_route_start_transform_from_config,
     make_lane_aligned_transform_from_config,
     route_debug_summary,
 )
@@ -68,10 +69,12 @@ def _draw_route_debug(
 
     stride = max(1, int(stride))
     debug = world.debug
-    color_mid = carla.Color(0, 200, 255)
-    color_start = carla.Color(0, 255, 0)
-    color_end = carla.Color(255, 0, 0)
-    color_line = carla.Color(0, 120, 255)
+    # Use subdued colors so the debug route remains visible without
+    # overwhelming the actual CARLA scene.
+    color_mid = carla.Color(95, 125, 145)
+    color_start = carla.Color(90, 155, 105)
+    color_end = carla.Color(175, 95, 85)
+    color_line = carla.Color(75, 105, 125)
 
     sampled_indices = list(range(0, len(route_points), stride))
     if sampled_indices[-1] != len(route_points) - 1:
@@ -192,6 +195,7 @@ class ScenarioEvaluator:
         draw_route_labels: bool = False,
         voice_overlay: bool = False,
         voice_match_config: str = "configs/lmdrive/route_audio_matches.yaml",
+        update_spectator: bool = False,
     ) -> Dict[str, Any]:
         """
         Run the scenario and return the final summary dict.
@@ -223,15 +227,23 @@ class ScenarioEvaluator:
         client = carla.Client(host, port)
         client.set_timeout(timeout)
 
-        world = load_world_for_config(client, cfg)
+        world = client.get_world()
+        original_settings = world.get_settings()
+        pre_load_settings = world.get_settings()
+        pre_load_settings.synchronous_mode = True
+        pre_load_settings.fixed_delta_seconds = dt
+        pre_load_settings.spectator_as_ego = False
+        world.apply_settings(pre_load_settings)
+
+        world = load_world_for_config(client, cfg, reset_settings=False)
         apply_weather_from_config(world, cfg)
         carla_map = world.get_map()
         blueprint_library = world.get_blueprint_library()
 
-        original_settings = world.get_settings()
         settings = world.get_settings()
         settings.synchronous_mode = True
         settings.fixed_delta_seconds = dt
+        settings.spectator_as_ego = False
         world.apply_settings(settings)
         _apply_traffic_conditions(world, cfg)
 
@@ -263,7 +275,11 @@ class ScenarioEvaluator:
                 sp = spawn_points[spawn_index % len(spawn_points)]
                 sp.location.z += 0.5
             else:
-                sp = make_lane_aligned_transform_from_config(carla_map, cfg)
+                route_cfg = cfg.get("route", {})
+                if route_cfg.get("mode") in {"global_route", "carla_runtime_planner"}:
+                    sp = make_route_start_transform_from_config(carla_map, cfg)
+                else:
+                    sp = make_lane_aligned_transform_from_config(carla_map, cfg)
 
             ego = world.try_spawn_actor(vehicle_bp, sp)
             if ego is None:
@@ -439,7 +455,8 @@ class ScenarioEvaluator:
                     route_metrics = route_tracker.measure(ego_loc)
                     red_metrics = red_light_tracker.update(ego_loc, speed_kmh)
 
-                    _update_spectator(world, ego)
+                    if update_spectator:
+                        _update_spectator(world, ego)
 
                     # ---- base record ----
                     instruction_active = timestamp >= trigger_time

@@ -14,7 +14,17 @@
 - `complex_obstacle`
 - `emergency_response`
 
-当前并不直接复用 `LMDrive` 官方 `leaderboard evaluator` 作为主运行入口，而是采用独立的 `carla_eval` runner、运行时日志采集和离线报告生成流程。
+当前同时保留项目自有 `carla_eval` runner，并提供 CARLA 0.9.15 + 官方 Leaderboard 2.0 evaluator 入口。官方入口使用 `scripts/run_official_leaderboard.sh`，路线格式使用 `routes/dongfeng_leaderboard_2.0.xml`。
+
+官方 evaluator 接入边界：路线 XML 已按官方 parser 校验，Agent 入口位于 `leaderboard_agents/dongfeng_agent.py`。真实 SimLingo 策略需要通过 `DONGFENG_POLICY_MODULE` 注入。S12/S13 的车辆、行人、公交站和施工锥桶已经转换为 ScenarioRunner 场景定义；S11 没有自定义 actor，保留空场景列表。
+
+场景转换后的官方路线构建命令：
+
+```bash
+scripts/build_official_leaderboard_routes.sh
+```
+
+该命令会从项目路线重新生成 Leaderboard XML，并注入 `third_party/scenario_runner/srunner/scenarios/dongfeng_route_scenarios.py` 中的 S12/S13 场景定义。运行 evaluator 前也可以设置 `AUTO_BUILD_ROUTES=1` 自动执行构建。
 
 同时，仓库已经新增一层轻量 `LMDrive / CARLA Leaderboard` 风格 benchmark 入口：
 
@@ -89,11 +99,33 @@ docs/pipeline/               LMDrive / benchmark 调研与接入说明
 
 ## 运行环境
 
-- `CARLA 0.9.10.1`
-- Python 环境需安装 CARLA Python API 与本仓库运行依赖
+- `CARLA 0.9.15`
+- Python 3.7/3.8 环境：`/data/hdt_workspace/my_env/carla0915`
+- CARLA Python API 必须来自 CARLA 0.9.15
+- 官方控制侧入口使用 Leaderboard 2.0 evaluator
 - 当前场景脚本默认连接 `localhost:2000`
 
+控制侧交付、接口定义和验收命令统一见：
+
+- [docs/scenario_delivery/control_side_delivery.md](docs/scenario_delivery/control_side_delivery.md)
+- `scripts/validate_scene_delivery.sh`
+
 ## 快速运行
+
+控制侧接入 SimLingo 时优先使用官方 Leaderboard 2.0 入口：
+
+```bash
+cd /data/hdt_workspace/dongfeng
+source scripts/env_carla0915.sh
+export DONGFENG_POLICY_MODULE=your_simlingo_adapter
+ROUTE_ID=S12_complex_obstacle_scene2_8km scripts/run_official_leaderboard.sh
+```
+
+交付前静态验收：
+
+```bash
+scripts/validate_scene_delivery.sh
+```
 
 ### 1. 运行单个场景
 
