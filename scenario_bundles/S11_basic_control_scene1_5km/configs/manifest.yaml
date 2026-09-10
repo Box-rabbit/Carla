@@ -6,7 +6,7 @@ carla_version: 0.9.15
 source:
   routes_file: routes/dongfeng_benchmark.xml
   annotations_file: configs/scenario_annotations/dongfeng_benchmark.yaml
-  voice_matches_file: configs/lmdrive/route_audio_matches.yaml
+  voice_matches_file: configs/simlingo/route_audio_matches.yaml
   scenario_config: configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml
 files:
   route_xml: routes/S11_basic_control_scene1_5km.xml
@@ -31,5 +31,5 @@ provenance:
   source_checksums_sha256:
     routes/dongfeng_benchmark.xml: 0798860215e2056cd09215cdcece3890628700aa11ac979d1cf8850d8e373b67
     configs/scenario_annotations/dongfeng_benchmark.yaml: 31d4d280f8475a339b7862a7973d6f47ca0809a516e29f075d31bf30234d93d1
-    configs/lmdrive/route_audio_matches.yaml: 6c2511b974ed820f91fb91680d1ffa33b93076b9f3764285a6a5c1fc1be08e7a
+    configs/simlingo/route_audio_matches.yaml: 6c2511b974ed820f91fb91680d1ffa33b93076b9f3764285a6a5c1fc1be08e7a
     configs/scenarios/basic_control/S11_basic_control_scene1_5km.yaml: 3e16dbe1ec88a56e2397005ec0432a5b211809ad6ec4376c34b72b540cde214a

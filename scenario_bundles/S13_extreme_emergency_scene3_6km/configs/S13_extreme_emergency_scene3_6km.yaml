@@ -39,8 +39,8 @@ route:
   route_file: routes/S13_extreme_emergency_scene3_6km.xml
   route_id: S13_extreme_emergency_scene3_6km
   design_route_file: routes/S13_extreme_emergency_scene3_6km.xml
-  lmdrive_route_file: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
-  lmdrive_route_id: S13_extreme_emergency_scene3_6km
+  simlingo_route_file: routes/S13_extreme_emergency_scene3_6km_simlingo.xml
+  simlingo_route_id: S13_extreme_emergency_scene3_6km
   source_policy: validated_route_xml_from_carla0915
   global_route:
     planner: CARLA lane trace / Global Route validation

@@ -440,7 +440,7 @@ def build_doc():
         "当前版本的语音输入来源是离线音频样本及其解析结果文件。样本文件位于",
         ("data/audio", True),
         "目录，匹配关系由",
-        ("configs/lmdrive/route_audio_matches.yaml", True),
+        ("configs/simlingo/route_audio_matches.yaml", True),
         "统一管理。每条样本包含",
         ("input_text", True),
         "、",
@@ -473,7 +473,7 @@ def build_doc():
         "和",
         ("voice_trigger_timestamp", True),
         "写入逐帧日志。当前主评测链路没有接入在线语音识别、在线意图识别和实时槽位抽取，",
-        ("Voice2LMDriveAdapter", True),
+        ("Voice2SimLingoAdapter", True),
         "只保留外部适配接口。"
     ])
     doc.rich_p([
@@ -618,7 +618,7 @@ def build_doc():
         "表1-2 实现依据",
         [
             ["代码文件", "类或函数", "配置文件", "关键字段"],
-            ["carla_eval/lmdrive/\nroute_audio_runtime.py", "RouteAudioRuntime.update", "configs/lmdrive/\nroute_audio_matches.yaml", "audio_id、event_id、\ndistance_m"],
+            ["carla_eval/simlingo/\nroute_audio_runtime.py", "RouteAudioRuntime.update", "configs/simlingo/\nroute_audio_matches.yaml", "audio_id、event_id、\ndistance_m"],
             ["carla_eval/sensors/\nobservation_builder.py", "ObservationBuilder\nSENSOR_SPECS", "运行参数\nenable_cameras", "rgb_front、rgb_left、\nrgb_right、rgb_rear、lidar"],
             ["carla_eval/\nevaluator.py", "ScenarioEvaluator.run", "三个场景YAML的\nruntime段", "timestamp、ego_speed_kmh、\nvoice字段"],
             ["carla_eval/\nruntime_metrics.py", "RouteTracker.measure", "三个场景YAML的\nevaluation段", "route_progress_m、\nroute_completion、\nlateral_offset_from_route_m"],
@@ -802,7 +802,7 @@ def build_doc():
             ["代码文件", "类或函数", "配置文件", "关键字段"],
             ["carla_eval/\nevaluator.py", "ScenarioEvaluator.run", "三个场景YAML的\nruntime段", "synchronous_mode、\nfixed_delta_seconds、\ntimestamp"],
             ["carla_eval/\nruntime_metrics.py", "RouteTracker.measure", "三个场景YAML的\nevaluation段", "route_progress_m、\nroute_completion、\nroute_deviation"],
-            ["configs/lmdrive/\nroute_audio_matches.yaml", "语音匹配配置", "同文件", "scenario_id、event_id、\ntrigger.distance_m、\nexpected.target_speed_kmh"],
+            ["configs/simlingo/\nroute_audio_matches.yaml", "语音匹配配置", "同文件", "scenario_id、event_id、\ntrigger.distance_m、\nexpected.target_speed_kmh"],
             ["data/audio目录下JSON", "离线语义样本", "同目录", "primary_intent、all_intents、\nconfidence、speed_values"],
             ["carla_eval/metrics/\nreport_generator.py", "infer_subtask_metrics", "场景YAML的\ninstructions段", "expected_subtasks"],
         ],
@@ -902,7 +902,7 @@ def build_doc():
             ["代码文件", "类或函数", "配置文件", "关键字段"],
             ["carla_eval/scenarios_impl/\ns11_basic_control_\nscene1.py", "initial_state\nupdate_state\ncompute_control", "configs/scenarios/\nbasic_control/\nS11_basic_control_\nscene1_5km.yaml", "active_window、\ntarget_speed_kmh、\ntarget_lateral_offset_m"],
             ["carla_eval/\nruntime_metrics.py", "RouteTracker.\npoint_at_progress_\nsmoothed", "同上", "route_progress_m、\nlateral_offset_from_route_m"],
-            ["configs/lmdrive/\nroute_audio_matches.yaml", "S11语音事件配置", "同上", "right_turn_1、\nlane_change_left、\naccelerate_to_80、\nslow_to_30"],
+            ["configs/simlingo/\nroute_audio_matches.yaml", "S11语音事件配置", "同上", "right_turn_1、\nlane_change_left、\naccelerate_to_80、\nslow_to_30"],
         ],
         widths=[2500, 1800, 2200, 2400],
         code_cols={0, 1, 2, 3},
@@ -981,7 +981,7 @@ def build_doc():
             ["代码文件", "类或函数", "配置文件", "关键字段"],
             ["carla_eval/scenarios_impl/\ns12_complex_obstacle_\nscene2.py", "update_state\ncompute_control\nextra_record", "configs/scenarios/\ncomplex_obstacle/\nS12_complex_obstacle_\nscene2_8km.yaml", "pedestrian_detected、\nlane_change_started、\novertake_completed、\nbus_stop_pass_completed"],
             ["carla_eval/\nruntime_metrics.py", "RouteTracker\n路线目标点函数", "同上", "route_progress_m、\nlateral_offset_from_route_m"],
-            ["configs/lmdrive/\nroute_audio_matches.yaml", "S12语音事件配置", "同上", "pedestrian_crossing、\nslow_vehicle_overtake、\nbus_stop_caution"],
+            ["configs/simlingo/\nroute_audio_matches.yaml", "S12语音事件配置", "同上", "pedestrian_crossing、\nslow_vehicle_overtake、\nbus_stop_caution"],
         ],
         widths=[2500, 1800, 2200, 2400],
         code_cols={0, 1, 2, 3},
@@ -1083,7 +1083,7 @@ def build_doc():
             ["代码文件", "类或函数", "配置文件", "关键字段"],
             ["carla_eval/scenarios_impl/\ns13_extreme_emergency_\nscene3.py", "_compute_hazard_score\nupdate_state\ncompute_control\nextra_record", "configs/scenarios/\nemergency_response/\nS13_extreme_emergency_\nscene3_6km.yaml", "ttc_s、\nemergency_brake_started、\nmerge_completed、\nworker_detected"],
             ["carla_eval/\nruntime_metrics.py", "RouteTracker\n路线目标点函数", "同上", "route_progress_m、\nlateral_offset_from_route_m"],
-            ["configs/lmdrive/\nroute_audio_matches.yaml", "S13语音事件配置", "同上", "dangerous_road_\nsafety_speed、\nsudden_cut_in_\nemergency、\nconstruction_merge_left"],
+            ["configs/simlingo/\nroute_audio_matches.yaml", "S13语音事件配置", "同上", "dangerous_road_\nsafety_speed、\nsudden_cut_in_\nemergency、\nconstruction_merge_left"],
         ],
         widths=[2500, 1800, 2200, 2400],
         code_cols={0, 1, 2, 3},
@@ -1096,7 +1096,7 @@ def build_doc():
         "当前主评测链路只接入离线语音事件。若没有匹配到当前场景的语音条目，",
         ("RouteAudioRuntime", True),
         "不会激活语音事件，车辆继续按场景默认指令和状态机运行。",
-        ("Voice2LMDriveAdapter", True),
+        ("Voice2SimLingoAdapter", True),
         "保留在线适配接口，但没有进入当前主流程，因此不在本文件中扩展在线异常分支。"
     ])
     doc.subhead("传感器异常")

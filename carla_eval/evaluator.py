@@ -33,7 +33,7 @@ from carla_eval.runtime_metrics import (
     make_lane_aligned_transform_from_config,
     route_debug_summary,
 )
-from carla_eval.lmdrive.route_audio_runtime import RouteAudioRuntime
+from carla_eval.simlingo.route_audio_runtime import RouteAudioRuntime
 from carla_eval.sensors.observation_builder import ObservationBuilder
 from carla_eval.visualization.voice_overlay import FixedVoiceOverlay
 
@@ -194,7 +194,7 @@ class ScenarioEvaluator:
         draw_route_lifetime: float = 600.0,
         draw_route_labels: bool = False,
         voice_overlay: bool = False,
-        voice_match_config: str = "configs/lmdrive/route_audio_matches.yaml",
+        voice_match_config: str = "configs/simlingo/route_audio_matches.yaml",
         update_spectator: bool = False,
     ) -> Dict[str, Any]:
         """
@@ -202,7 +202,7 @@ class ScenarioEvaluator:
 
         Args:
             enable_cameras: if True, attach RGB cameras via ObservationBuilder
-                            (needed when an LMDrive agent is connected)
+                            (needed when an SimLingo agent is connected)
         """
         cfg = self.cfg
         scenario_id = cfg.get("scenario_id", self.config_path.stem)

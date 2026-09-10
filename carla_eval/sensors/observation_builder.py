@@ -2,7 +2,7 @@
 ObservationBuilder: attach cameras and LiDAR to ego, collect sensor data
 each tick into a structured observation dict for VLA model consumption.
 
-Sensor layout mirrors lmdriver_agent.py from LMDrive:
+Sensor layout mirrors simlingor_agent.py from SimLingo:
   - rgb_front : 1200×900, FOV 100°, x=1.3 z=2.3 yaw=0
   - rgb_left  :  400×300, FOV 100°, x=1.3 z=2.3 yaw=-60
   - rgb_right :  400×300, FOV 100°, x=1.3 z=2.3 yaw=+60
@@ -31,7 +31,7 @@ def _make_camera_transform(x: float, y: float, z: float, yaw: float) -> carla.Tr
 class ObservationBuilder:
     """
     Attach sensors to ego and provide a get() method that returns the latest
-    observation dict suitable for an LMDrive-compatible agent.
+    observation dict suitable for an SimLingo-compatible agent.
     """
 
     SENSOR_SPECS = [

@@ -1,6 +1,6 @@
 """
 RouteIndexer: iterate over all routes in an XML file with repetitions and
-resume support (LMDrive-style).
+resume support (SimLingo-style).
 """
 
 import json

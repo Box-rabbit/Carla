@@ -2,7 +2,7 @@ PYTHON ?= python
 
 .PHONY: list validate-pdf validate-s11 validate-s12 validate-s13 \
         validate-delivery \
-        build-lmdrive-routes match-audio bundle-s11 bundle-s12 bundle-s13 \
+        build-simlingo-routes match-audio bundle-s11 bundle-s12 bundle-s13 \
         report-s11 report-s12 report-s13
 
 list:
@@ -22,8 +22,8 @@ validate-s12:
 validate-s13:
 	$(PYTHON) carla_eval/validate_config.py --config configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml
 
-build-lmdrive-routes:
-	$(PYTHON) carla_eval/tools/build_lmdrive_adapted_routes.py
+build-simlingo-routes:
+	$(PYTHON) carla_eval/tools/build_simlingo_adapted_routes.py
 
 match-audio:
 	$(PYTHON) carla_eval/tools/match_route_audio.py

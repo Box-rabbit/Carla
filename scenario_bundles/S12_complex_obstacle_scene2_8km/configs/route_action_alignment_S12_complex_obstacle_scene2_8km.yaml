@@ -3,7 +3,7 @@ description: Maintained voice-to-route alignment for S12 and S13. Voice controls
 version: 1
 routes:
 - scenario_id: S12_complex_obstacle_scene2_8km
-  delivery_route_file: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
+  delivery_route_file: routes/S12_complex_obstacle_scene2_8km_simlingo.xml
   actions:
   - event_id: pedestrian_crossing
     voice_trigger_progress_m: 280.0

@@ -6,13 +6,13 @@ scenario runtime and should be run explicitly from the repository root.
 ## Route And Bundle Delivery
 
 - `export_validated_dense_route.py`: export and validate a dense CARLA route.
-- `build_lmdrive_adapted_routes.py`: generate sparse LMDrive/Leaderboard
-  delivery routes from `configs/lmdrive/route_adaptations.yaml`.
+- `build_simlingo_adapted_routes.py`: generate sparse SimLingo/Leaderboard
+  delivery routes from `configs/simlingo/route_adaptations.yaml`.
 - `export_standalone_scenario_bundle.py`: export one route, scenario config,
   annotation, voice matches, route-action alignment, and a provenance manifest
   into `scenario_bundles/`.
 - `match_route_audio.py`: regenerate
-  `configs/lmdrive/route_audio_matches.yaml` from `data/audio/`.
+  `configs/simlingo/route_audio_matches.yaml` from `data/audio/`.
 
 ## Route Discovery
 

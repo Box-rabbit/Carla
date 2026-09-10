@@ -1,4 +1,4 @@
-"""Unified LMDrive-style benchmark runner for Dongfeng CARLA scenarios."""
+"""Unified SimLingo-style benchmark runner for Dongfeng CARLA scenarios."""
 
 import argparse
 import json
@@ -19,7 +19,7 @@ DEFAULT_SUITES = Path("configs/benchmark_suites.yaml")
 
 def _parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description="Run Dongfeng scenarios with an LMDrive-style route/scenario benchmark interface."
+        description="Run Dongfeng scenarios with an SimLingo-style route/scenario benchmark interface."
     )
     parser.add_argument("--routes", default=str(DEFAULT_ROUTES), help="Route XML file")
     parser.add_argument("--scenarios", default=str(DEFAULT_SCENARIOS), help="Scenario annotation YAML/JSON")
@@ -45,7 +45,7 @@ def _parse_args(argv=None):
     parser.add_argument("--draw-route-stride", type=int, default=4)
     parser.add_argument("--draw-route-lifetime", type=float, default=900.0)
     parser.add_argument("--voice-overlay", action="store_true", help="Show matched voice command in a fixed screen window")
-    parser.add_argument("--voice-match-config", default="configs/lmdrive/route_audio_matches.yaml")
+    parser.add_argument("--voice-match-config", default="configs/simlingo/route_audio_matches.yaml")
     return parser.parse_args(argv)
 
 

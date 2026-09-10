@@ -1,4 +1,4 @@
-"""Build sparse LMDrive delivery routes from validated dense design routes.
+"""Build sparse SimLingo delivery routes from validated dense design routes.
 
 The generated XML remains Leaderboard-compatible: each waypoint only requires
 the standard x/y/z fields. Extra road_option metadata documents the maneuver,
@@ -146,7 +146,7 @@ def _write_route_xml(output_path: Path, source_route: ET.Element, points: Sequen
         id=str(source_route.get("id")),
         town=str(source_route.get("town")),
         category=str(source_route.get("category", "")),
-        route_variant="lmdrive_adapted",
+        route_variant="simlingo_adapted",
     )
     weather = source_route.find("weather")
     if weather is not None:
@@ -180,7 +180,7 @@ def _write_validation(path: Path, route_cfg: Dict[str, Any], source_length_m: fl
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "scenario_id": route_cfg["scenario_id"],
-        "route_variant": "lmdrive_adapted",
+        "route_variant": "simlingo_adapted",
         "source_route": route_cfg["source_xml"],
         "source_length_m": round(source_length_m, 3),
         "interpolated_length_m": round(_route_length(output), 3),
@@ -210,7 +210,7 @@ def _replace_route(combined_root: ET.Element, source_route: ET.Element, points: 
         id=str(route_id),
         town=str(source_route.get("town")),
         category=str(source_route.get("category", "")),
-        route_variant="lmdrive_adapted",
+        route_variant="simlingo_adapted",
     )
     weather = source_route.find("weather")
     if weather is not None:
@@ -228,8 +228,8 @@ def _replace_route(combined_root: ET.Element, source_route: ET.Element, points: 
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build sparse LMDrive-adapted routes from dense design XML files.")
-    parser.add_argument("--config", default="configs/lmdrive/route_adaptations.yaml")
+    parser = argparse.ArgumentParser(description="Build sparse SimLingo-adapted routes from dense design XML files.")
+    parser.add_argument("--config", default="configs/simlingo/route_adaptations.yaml")
     args = parser.parse_args()
 
     config_path = Path(args.config)

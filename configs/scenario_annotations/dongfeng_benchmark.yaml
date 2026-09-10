@@ -1,4 +1,4 @@
-description: Dongfeng benchmark scenario annotations in LMDrive/Leaderboard style.
+description: Dongfeng benchmark scenario annotations in SimLingo/Leaderboard style.
 available_scenarios:
   - Town05:
       - scenario_id: S11_basic_control_scene1_5km

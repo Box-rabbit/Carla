@@ -4,7 +4,7 @@ description: >-
 version: 1
 routes:
   - scenario_id: S12_complex_obstacle_scene2_8km
-    delivery_route_file: routes/complex_obstacle/S12_complex_obstacle_scene2_8km_lmdrive.xml
+    delivery_route_file: routes/complex_obstacle/S12_complex_obstacle_scene2_8km_simlingo.xml
     actions:
       - event_id: pedestrian_crossing
         voice_trigger_progress_m: 280.0
@@ -27,7 +27,7 @@ routes:
         route_action: LANEFOLLOW
         control_scope: longitudinal_only
   - scenario_id: S13_extreme_emergency_scene3_6km
-    delivery_route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km_lmdrive.xml
+    delivery_route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km_simlingo.xml
     actions:
       - event_id: dangerous_road_safety_speed
         voice_trigger_progress_m: 0.0

@@ -1,6 +1,6 @@
 {
   "scenario_id": "S13_extreme_emergency_scene3_6km",
-  "route_variant": "lmdrive_adapted",
+  "route_variant": "simlingo_adapted",
   "source_route": "routes/emergency_response/S13_extreme_emergency_scene3_6km.xml",
   "source_length_m": 6000.402,
   "interpolated_length_m": 5999.23,

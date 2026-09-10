@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <routes>
-  <route category="complex_obstacle" id="S12_complex_obstacle_scene2_8km" route_variant="lmdrive_adapted" town="Town05">
+  <route category="complex_obstacle" id="S12_complex_obstacle_scene2_8km" route_variant="simlingo_adapted" town="Town05">
     <weather cloudiness="60" precipitation="0" sun_altitude_angle="15" />
     <waypoint road_option="LANEFOLLOW" route_progress_m="0.0" x="151.099" y="-98.233" z="0.500" />
     <waypoint road_option="LANEFOLLOW" route_progress_m="10.0" x="151.440" y="-88.246" z="0.500" />

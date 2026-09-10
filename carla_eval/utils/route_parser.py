@@ -1,5 +1,5 @@
 """
-Route XML and Scenario JSON parser, modelled after LMDrive's RouteParser.
+Route XML and Scenario JSON parser, modelled after SimLingo's RouteParser.
 
 Responsibilities:
 - parse_routes_file()   : XML → list[RouteScenarioConfiguration]
@@ -90,7 +90,7 @@ def _parse_weather_element(route_elem: ET.Element) -> Dict[str, Any]:
 
 
 class RouteParser:
-    """Parse route XML and scenario JSON files (LMDrive-style)."""
+    """Parse route XML and scenario JSON files (SimLingo-style)."""
 
     @staticmethod
     def parse_routes_file(
@@ -149,7 +149,7 @@ class RouteParser:
         """
         Parse a scenario JSON file into {town: [scenario_dict, ...]} mapping.
 
-        Mirrors LMDrive's parse_annotations_file().
+        Mirrors SimLingo's parse_annotations_file().
         """
         scenario_file = Path(scenario_file)
         if not scenario_file.exists():

@@ -31,8 +31,8 @@ route:
   route_file: routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml
   route_id: S12_complex_obstacle_scene2_8km
   design_route_file: routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml
-  lmdrive_route_file: routes/complex_obstacle/S12_complex_obstacle_scene2_8km_lmdrive.xml
-  lmdrive_route_id: S12_complex_obstacle_scene2_8km
+  simlingo_route_file: routes/complex_obstacle/S12_complex_obstacle_scene2_8km_simlingo.xml
+  simlingo_route_id: S12_complex_obstacle_scene2_8km
   source_policy: validated_route_xml_from_carla0915
   global_route:
     planner: GlobalRoutePlanner

@@ -1,6 +1,6 @@
 {
   "scenario_id": "S12_complex_obstacle_scene2_8km",
-  "route_variant": "lmdrive_adapted",
+  "route_variant": "simlingo_adapted",
   "source_route": "routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml",
   "source_length_m": 8187.053,
   "interpolated_length_m": 8185.792,

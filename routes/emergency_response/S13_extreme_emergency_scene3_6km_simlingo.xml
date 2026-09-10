@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <routes>
-  <route category="emergency_response" id="S13_extreme_emergency_scene3_6km" route_variant="lmdrive_adapted" town="Town05">
+  <route category="emergency_response" id="S13_extreme_emergency_scene3_6km" route_variant="simlingo_adapted" town="Town05">
     <weather cloudiness="100.0" fog_density="12.0" fog_distance="80.0" precipitation="60.0" precipitation_deposits="70.0" sun_altitude_angle="-14.0" wetness="85.0" wind_intensity="45.0" />
     <waypoint road_option="LANEFOLLOW" route_progress_m="0.0" x="28.679" y="-177.479" z="0.500" />
     <waypoint road_option="LANEFOLLOW" route_progress_m="10.0" x="28.411" y="-167.483" z="0.500" />

@@ -158,5 +158,5 @@ carla_eval/run_carla_s12_complex_obstacle_scene2.py
 carla_eval/run_carla_s13_extreme_emergency_scene3.py
 carla_eval/run_benchmark.py
 routes/dongfeng_benchmark.xml
-routes/dongfeng_lmdrive_benchmark.xml
+routes/dongfeng_simlingo_benchmark.xml
 ```

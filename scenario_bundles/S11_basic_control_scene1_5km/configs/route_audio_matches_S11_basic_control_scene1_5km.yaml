@@ -1,4 +1,4 @@
-generated_from: configs/lmdrive/route_audio_matches.yaml
+generated_from: configs/simlingo/route_audio_matches.yaml
 scenario_annotations_file: configs/S11_basic_control_scene1_5km.annotations.yaml
 prefer_route: S11_basic_control_scene1_5km
 prefer_route_hard: true

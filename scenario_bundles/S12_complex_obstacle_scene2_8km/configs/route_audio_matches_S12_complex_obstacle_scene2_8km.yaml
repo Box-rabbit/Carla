@@ -1,4 +1,4 @@
-generated_from: configs/lmdrive/route_audio_matches.yaml
+generated_from: configs/simlingo/route_audio_matches.yaml
 scenario_annotations_file: configs/S12_complex_obstacle_scene2_8km.annotations.yaml
 prefer_route: S12_complex_obstacle_scene2_8km
 prefer_route_hard: true
@@ -12,7 +12,7 @@ matches:
   scenario_type: ComplexObstacleScene2
   event_id: pedestrian_crossing
   event_source: scenario_annotation
-  route_file: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
+  route_file: routes/S12_complex_obstacle_scene2_8km_simlingo.xml
   scenario_config: configs/S12_complex_obstacle_scene2_8km.yaml
   trigger:
     type: route_distance
@@ -51,7 +51,7 @@ matches:
   scenario_type: ComplexObstacleScene2
   event_id: slow_vehicle_overtake
   event_source: scenario_annotation
-  route_file: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
+  route_file: routes/S12_complex_obstacle_scene2_8km_simlingo.xml
   scenario_config: configs/S12_complex_obstacle_scene2_8km.yaml
   trigger:
     type: route_distance
@@ -92,7 +92,7 @@ matches:
   scenario_type: ComplexObstacleScene2
   event_id: bus_stop_caution
   event_source: scenario_annotation
-  route_file: routes/S12_complex_obstacle_scene2_8km_lmdrive.xml
+  route_file: routes/S12_complex_obstacle_scene2_8km_simlingo.xml
   scenario_config: configs/S12_complex_obstacle_scene2_8km.yaml
   trigger:
     type: route_distance

@@ -11,5 +11,5 @@ after adding or replacing recordings:
 python carla_eval/tools/match_route_audio.py
 ```
 
-`configs/lmdrive/route_audio_matches.yaml` stores repository-relative POSIX
+`configs/simlingo/route_audio_matches.yaml` stores repository-relative POSIX
 paths only. It does not retain the original recorder workstation path.

@@ -7,10 +7,10 @@ from pathlib import Path
 from .trigger_runtime import resolve_config_relative_path
 
 
-class Voice2LMDriveAdapter:
-    def __init__(self, lmdrive_cfg):
-        self.lmdrive_cfg = lmdrive_cfg
-        self.backend_cfg = lmdrive_cfg.get("voice_backend", {})
+class Voice2SimLingoAdapter:
+    def __init__(self, simlingo_cfg):
+        self.simlingo_cfg = simlingo_cfg
+        self.backend_cfg = simlingo_cfg.get("voice_backend", {})
 
     def _normalize_output(self, payload, fallback_text):
         intents = payload.get("intents") or payload.get("recognized_intents") or []
@@ -47,7 +47,7 @@ class Voice2LMDriveAdapter:
 
         stdout = proc.stdout.strip()
         if not stdout:
-            raise RuntimeError("empty Voice2LMDrive stdout")
+            raise RuntimeError("empty Voice2SimLingo stdout")
 
         try:
             payload = json.loads(stdout)
@@ -66,7 +66,7 @@ class Voice2LMDriveAdapter:
             "recognized_intents": list(expected.get("intents", [])),
             "target_speed_max_kmh": expected.get("target_speed_max_kmh"),
             "no_collision": expected.get("no_collision"),
-            "backend_note": "mock backend used because no external Voice2LMDrive command is configured",
+            "backend_note": "mock backend used because no external Voice2SimLingo command is configured",
         }
         return self._normalize_output(payload, fallback_text)
 
@@ -78,7 +78,7 @@ class Voice2LMDriveAdapter:
         fallback_text = instruction_text or scenario_id
 
         result = {
-            "backend": self.backend_cfg.get("name", "Voice2LMDrive"),
+            "backend": self.backend_cfg.get("name", "Voice2SimLingo"),
             "backend_mode": self.backend_cfg.get("execution_mode", "mock"),
             "input_mode": input_mode,
             "audio_path": str(audio_path) if audio_path is not None else trigger.get("audio_path"),

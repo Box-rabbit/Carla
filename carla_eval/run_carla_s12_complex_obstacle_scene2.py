@@ -44,7 +44,7 @@ def _parse_args(argv=None):
     p.add_argument("--no-spectator", dest="update_spectator", action="store_false", help=argparse.SUPPRESS)
     p.set_defaults(enable_cameras=False, update_spectator=False)
     p.add_argument("--voice-overlay", action="store_true", help="Show matched voice command in a fixed screen window")
-    p.add_argument("--voice-match-config", default="configs/lmdrive/route_audio_matches.yaml")
+    p.add_argument("--voice-match-config", default="configs/simlingo/route_audio_matches.yaml")
     return p.parse_args(argv)
 
 

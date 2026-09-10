@@ -41,8 +41,8 @@ route:
   route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km.xml
   route_id: S13_extreme_emergency_scene3_6km
   design_route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km.xml
-  lmdrive_route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km_lmdrive.xml
-  lmdrive_route_id: S13_extreme_emergency_scene3_6km
+  simlingo_route_file: routes/emergency_response/S13_extreme_emergency_scene3_6km_simlingo.xml
+  simlingo_route_id: S13_extreme_emergency_scene3_6km
   source_policy: validated_route_xml_from_carla0915
   lane_trace:
     align_spawn_to_lane: true

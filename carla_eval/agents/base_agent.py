@@ -1,4 +1,4 @@
-"""Agent interface aligned with CARLA Leaderboard / LMDrive style."""
+"""Agent interface aligned with CARLA Leaderboard / SimLingo style."""
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple
@@ -8,7 +8,7 @@ class BaseAgent(ABC):
     """
     Minimal benchmark agent contract.
 
-    A real LMDrive adapter should implement this interface and return
+    A real SimLingo adapter should implement this interface and return
     (throttle, brake, steer) from multimodal observations and route commands.
     Current rule scenarios still use their scenario-local controller, but the
     benchmark runner now has a stable place to plug a model agent in.

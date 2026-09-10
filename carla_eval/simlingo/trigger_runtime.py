@@ -40,7 +40,7 @@ def resolve_config_relative_path(cfg, relative_path):
     return path.resolve()
 
 
-class LMDriveTriggerRuntime:
+class SimLingoTriggerRuntime:
     def __init__(self, trigger_cfg):
         self.trigger_cfg = trigger_cfg
         self._triggered = False

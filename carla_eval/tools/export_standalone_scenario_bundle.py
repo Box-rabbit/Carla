@@ -27,8 +27,8 @@ import yaml
 
 DEFAULT_ROUTES = Path("routes/dongfeng_benchmark.xml")
 DEFAULT_SCENARIOS = Path("configs/scenario_annotations/dongfeng_benchmark.yaml")
-DEFAULT_VOICE_MATCHES = Path("configs/lmdrive/route_audio_matches.yaml")
-DEFAULT_ROUTE_ACTION_ALIGNMENT = Path("configs/lmdrive/route_action_alignment.yaml")
+DEFAULT_VOICE_MATCHES = Path("configs/simlingo/route_audio_matches.yaml")
+DEFAULT_ROUTE_ACTION_ALIGNMENT = Path("configs/simlingo/route_action_alignment.yaml")
 DEFAULT_OUTPUT_ROOT = Path("scenario_bundles")
 
 
@@ -149,7 +149,7 @@ def _build_exported_scenario_config(
     *,
     route_id: str,
     route_xml_rel: str,
-    lmdrive_route_xml_rel: Optional[str] = None,
+    simlingo_route_xml_rel: Optional[str] = None,
 ) -> Dict[str, Any]:
     exported = copy.deepcopy(cfg)
     route_cfg = exported.setdefault("route", {})
@@ -168,8 +168,8 @@ def _build_exported_scenario_config(
     route_cfg["route_file"] = route_xml_rel
     route_cfg["route_id"] = route_id
     route_cfg["design_route_file"] = route_xml_rel
-    if lmdrive_route_xml_rel:
-        route_cfg["lmdrive_route_file"] = lmdrive_route_xml_rel
+    if simlingo_route_xml_rel:
+        route_cfg["simlingo_route_file"] = simlingo_route_xml_rel
     return exported
 
 
@@ -211,9 +211,9 @@ def _collect_voice_matches(
 def _collect_route_action_alignment(
     alignment_file: Path,
     scenario_id: str,
-    lmdrive_route_rel: Optional[str],
+    simlingo_route_rel: Optional[str],
 ) -> Optional[Dict[str, Any]]:
-    if not lmdrive_route_rel or not alignment_file.exists():
+    if not simlingo_route_rel or not alignment_file.exists():
         return None
 
     source = _load_structured_file(alignment_file)
@@ -226,7 +226,7 @@ def _collect_route_action_alignment(
         return None
 
     for item in matching_routes:
-        item["delivery_route_file"] = lmdrive_route_rel
+        item["delivery_route_file"] = simlingo_route_rel
 
     return {
         "description": source.get("description", "Scenario-specific voice-to-route alignment."),
@@ -270,7 +270,7 @@ def _build_manifest(
     source_annotations_file: Path,
     source_voice_matches_file: Path,
     source_route_action_alignment_file: Path,
-    lmdrive_route_xml_rel: Optional[str],
+    simlingo_route_xml_rel: Optional[str],
     route_action_alignment_rel: Optional[str],
     validation_files: Dict[str, str],
 ) -> Dict[str, Any]:
@@ -335,8 +335,8 @@ def _build_manifest(
             },
         },
     }
-    if lmdrive_route_xml_rel:
-        manifest["files"]["lmdrive_route_xml"] = lmdrive_route_xml_rel
+    if simlingo_route_xml_rel:
+        manifest["files"]["simlingo_route_xml"] = simlingo_route_xml_rel
     if route_action_alignment_rel:
         manifest["files"]["route_action_alignment"] = route_action_alignment_rel
         manifest["provenance"]["source_checksums_sha256"][
@@ -382,33 +382,33 @@ def export_bundle(
 
     scenario_config_rel = f"configs/{scenario_id}.yaml"
     route_xml_rel = f"routes/{scenario_id}.xml"
-    lmdrive_route_xml_rel = None
+    simlingo_route_xml_rel = None
     annotations_name = f"{scenario_id}.annotations.{annotations_format}"
     annotations_rel = f"configs/{annotations_name}"
     voice_matches_name = f"route_audio_matches_{scenario_id}.yaml"
     voice_matches_rel = f"configs/{voice_matches_name}"
     route_action_alignment_rel = None
 
-    configured_lmdrive_route = str(
-        cfg.get("route", {}).get("lmdrive_route_file", "")
+    configured_simlingo_route = str(
+        cfg.get("route", {}).get("simlingo_route_file", "")
     ).strip()
-    if configured_lmdrive_route:
-        lmdrive_source = Path(configured_lmdrive_route)
-        if not lmdrive_source.exists():
+    if configured_simlingo_route:
+        simlingo_source = Path(configured_simlingo_route)
+        if not simlingo_source.exists():
             raise FileNotFoundError(
-                f"Configured LMDrive route does not exist: {lmdrive_source}"
+                f"Configured SimLingo route does not exist: {simlingo_source}"
             )
-        lmdrive_route_xml_rel = f"routes/{scenario_id}_lmdrive.xml"
+        simlingo_route_xml_rel = f"routes/{scenario_id}_simlingo.xml"
         _write_xml_document(
-            _find_route_element(lmdrive_source, route_id),
-            bundle_root / lmdrive_route_xml_rel,
+            _find_route_element(simlingo_source, route_id),
+            bundle_root / simlingo_route_xml_rel,
         )
 
     exported_cfg = _build_exported_scenario_config(
         cfg,
         route_id=route_id,
         route_xml_rel=route_xml_rel,
-        lmdrive_route_xml_rel=lmdrive_route_xml_rel,
+        simlingo_route_xml_rel=simlingo_route_xml_rel,
     )
     _write_yaml(bundle_root / scenario_config_rel, exported_cfg)
     _write_xml_document(route_elem, bundle_root / route_xml_rel)
@@ -427,7 +427,7 @@ def export_bundle(
         voice_matches_data=voice_matches_data,
         scenario_id=scenario_id,
         route_id=route_id,
-        route_file_rel=lmdrive_route_xml_rel or route_xml_rel,
+        route_file_rel=simlingo_route_xml_rel or route_xml_rel,
         scenario_config_rel=scenario_config_rel,
         annotations_rel=annotations_rel,
     )
@@ -436,7 +436,7 @@ def export_bundle(
     route_action_alignment = _collect_route_action_alignment(
         route_action_alignment_file,
         scenario_id,
-        lmdrive_route_xml_rel,
+        simlingo_route_xml_rel,
     )
     if route_action_alignment is not None:
         route_action_alignment_rel = (
@@ -450,7 +450,7 @@ def export_bundle(
     validation_files = {}
     for manifest_key, validation_name in (
         ("validation", "route_validation.json"),
-        ("lmdrive_validation", "lmdrive_route_validation.json"),
+        ("simlingo_validation", "simlingo_route_validation.json"),
     ):
         validation_path = bundle_root / "validation" / validation_name
         if validation_path.exists():
@@ -475,7 +475,7 @@ def export_bundle(
         source_annotations_file=scenarios_file,
         source_voice_matches_file=voice_matches_file,
         source_route_action_alignment_file=route_action_alignment_file,
-        lmdrive_route_xml_rel=lmdrive_route_xml_rel,
+        simlingo_route_xml_rel=simlingo_route_xml_rel,
         route_action_alignment_rel=route_action_alignment_rel,
         validation_files=validation_files,
     )

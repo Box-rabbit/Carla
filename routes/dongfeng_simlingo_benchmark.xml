@@ -1719,7 +1719,7 @@
     <waypoint x="-225.586" y="19.363" z="10.000" />
     <waypoint x="-225.544" y="16.363" z="10.000" />
   </route>
-    <route category="complex_obstacle" id="S12_complex_obstacle_scene2_8km" route_variant="lmdrive_adapted" town="Town05">
+    <route category="complex_obstacle" id="S12_complex_obstacle_scene2_8km" route_variant="simlingo_adapted" town="Town05">
     <weather cloudiness="60" precipitation="0" sun_altitude_angle="15" />
     <waypoint road_option="LANEFOLLOW" route_progress_m="0.0" x="151.099" y="-98.233" z="0.500" />
     <waypoint road_option="LANEFOLLOW" route_progress_m="10.0" x="151.440" y="-88.246" z="0.500" />
@@ -2550,7 +2550,7 @@
     <waypoint road_option="LANEFOLLOW" route_progress_m="8170.0" x="189.416" y="67.451" z="0.500" />
     <waypoint road_option="LANEFOLLOW" route_progress_m="8180.0" x="189.300" y="77.451" z="0.500" />
     <waypoint road_option="LANEFOLLOW" route_progress_m="8187.1" x="189.219" y="84.503" z="0.500" />
-  </route><route category="emergency_response" id="S13_extreme_emergency_scene3_6km" route_variant="lmdrive_adapted" town="Town05">
+  </route><route category="emergency_response" id="S13_extreme_emergency_scene3_6km" route_variant="simlingo_adapted" town="Town05">
     <weather cloudiness="100.0" fog_density="12.0" fog_distance="80.0" precipitation="60.0" precipitation_deposits="70.0" sun_altitude_angle="-14.0" wetness="85.0" wind_intensity="45.0" />
     <waypoint road_option="LANEFOLLOW" route_progress_m="0.0" x="28.679" y="-177.479" z="0.500" />
     <waypoint road_option="LANEFOLLOW" route_progress_m="10.0" x="28.411" y="-167.483" z="0.500" />

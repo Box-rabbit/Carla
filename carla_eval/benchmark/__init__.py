@@ -1,4 +1,4 @@
-"""LMDrive-style benchmark orchestration for Dongfeng scenarios."""
+"""SimLingo-style benchmark orchestration for Dongfeng scenarios."""
 
 from .annotations import ScenarioAnnotation, ScenarioAnnotationStore
 from .route_scenario import DongfengRouteScenario

@@ -1,7 +1,7 @@
 project:
   name: "XH-202602_Dongfeng_Voice_Control_AD"
   module: "CARLA scenario construction and metric evaluation"
-  main_pipeline: "LMDrive/LangAuto + CARLA Leaderboard-compatible evaluation"
+  main_pipeline: "SimLingo/LangAuto + CARLA Leaderboard-compatible evaluation"
 
 global_design_principles:
   - "优先保证可控、可重复、能稳定出结果"

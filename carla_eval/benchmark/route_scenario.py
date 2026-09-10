@@ -1,4 +1,4 @@
-"""LMDrive-style RouteScenario adapter for current Dongfeng scenarios."""
+"""SimLingo-style RouteScenario adapter for current Dongfeng scenarios."""
 
 import copy
 from pathlib import Path
@@ -16,7 +16,7 @@ class DongfengRouteScenario:
 
     This is intentionally lighter than CARLA Leaderboard's RouteScenario:
     it preserves the current ScenarioEvaluator while moving scene selection,
-    route source and annotations into LMDrive-style files.
+    route source and annotations into SimLingo-style files.
     """
 
     def __init__(

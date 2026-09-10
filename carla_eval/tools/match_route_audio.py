@@ -1,7 +1,7 @@
 """Match recorded voice commands to benchmark routes and route events.
 
 This script is intentionally offline: it only reads route XML, scenario
-annotations, scenario YAML files, and Voice2LMDrive result JSON files.
+annotations, scenario YAML files, and Voice2SimLingo result JSON files.
 It does not connect to CARLA and does not modify existing scenario configs.
 """
 
@@ -22,7 +22,7 @@ if __package__ in (None, ""):
 DEFAULT_RESULTS_DIR = Path("data/audio")
 DEFAULT_ROUTES = Path("routes/dongfeng_benchmark.xml")
 DEFAULT_SCENARIOS = Path("configs/scenario_annotations/dongfeng_benchmark.yaml")
-DEFAULT_OUTPUT = Path("configs/lmdrive/route_audio_matches.yaml")
+DEFAULT_OUTPUT = Path("configs/simlingo/route_audio_matches.yaml")
 DEFAULT_PREFER_ROUTE = ""
 
 

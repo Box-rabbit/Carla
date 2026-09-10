@@ -1,4 +1,4 @@
-generated_from: configs/lmdrive/route_audio_matches.yaml
+generated_from: configs/simlingo/route_audio_matches.yaml
 scenario_annotations_file: configs/S13_extreme_emergency_scene3_6km.annotations.yaml
 prefer_route: S13_extreme_emergency_scene3_6km
 prefer_route_hard: true
@@ -12,7 +12,7 @@ matches:
   scenario_type: EmergencyResponseScene3
   event_id: dangerous_road_safety_speed
   event_source: scenario_annotation
-  route_file: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
+  route_file: routes/S13_extreme_emergency_scene3_6km_simlingo.xml
   scenario_config: configs/S13_extreme_emergency_scene3_6km.yaml
   trigger:
     type: route_distance
@@ -49,7 +49,7 @@ matches:
   scenario_type: EmergencyResponseScene3
   event_id: sudden_cut_in_emergency
   event_source: scenario_annotation
-  route_file: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
+  route_file: routes/S13_extreme_emergency_scene3_6km_simlingo.xml
   scenario_config: configs/S13_extreme_emergency_scene3_6km.yaml
   trigger:
     type: route_distance
@@ -88,7 +88,7 @@ matches:
   scenario_type: EmergencyResponseScene3
   event_id: construction_merge_left
   event_source: scenario_annotation
-  route_file: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
+  route_file: routes/S13_extreme_emergency_scene3_6km_simlingo.xml
   scenario_config: configs/S13_extreme_emergency_scene3_6km.yaml
   trigger:
     type: route_distance

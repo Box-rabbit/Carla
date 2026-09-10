@@ -5,9 +5,9 @@
 ## 总入口
 
 - Benchmark routes: `routes/dongfeng_benchmark.xml`
-- LMDrive-adapted routes: `routes/dongfeng_lmdrive_benchmark.xml`
+- SimLingo-adapted routes: `routes/dongfeng_simlingo_benchmark.xml`
 - Scenario annotations: `configs/scenario_annotations/dongfeng_benchmark.yaml`
-- Voice matches: `configs/lmdrive/route_audio_matches.yaml`
+- Voice matches: `configs/simlingo/route_audio_matches.yaml`
 - Scenario bundles: `scenario_bundles/S11_basic_control_scene1_5km/`, `scenario_bundles/S12_complex_obstacle_scene2_8km/`, `scenario_bundles/S13_extreme_emergency_scene3_6km/`
 
 ## S11 场景1基础操控
@@ -43,7 +43,7 @@ are not the v0.4 route source.
 - Config: `configs/scenarios/complex_obstacle/S12_complex_obstacle_scene2_8km.yaml`
 - Global Route design: `docs/scenario_design/s12_global_route_design_v04.yaml`
 - Dense route XML: `routes/complex_obstacle/S12_complex_obstacle_scene2_8km.xml`
-- LMDrive route XML: `routes/complex_obstacle/S12_complex_obstacle_scene2_8km_lmdrive.xml`
+- SimLingo route XML: `routes/complex_obstacle/S12_complex_obstacle_scene2_8km_simlingo.xml`
 - Voice package: `data/audio/S12/20260721/`
 - Bundle: `scenario_bundles/S12_complex_obstacle_scene2_8km/`
 
@@ -53,7 +53,7 @@ Voice triggers:
 - `1090 m`: slow vehicle overtake, left lane change and return
 - `1720 m`: bus stop caution
 
-LMDrive route action alignment:
+SimLingo route action alignment:
 
 - Overtake left lane change: `1130-1170 m`
 - Return right lane change: `1210-1255 m`
@@ -69,7 +69,7 @@ straight prefix, so the start segment stays quiet before the first obstacle.
 - Length: about `6.00 km`
 - Config: `configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml`
 - Dense route XML: `routes/emergency_response/S13_extreme_emergency_scene3_6km.xml`
-- LMDrive route XML: `routes/emergency_response/S13_extreme_emergency_scene3_6km_lmdrive.xml`
+- SimLingo route XML: `routes/emergency_response/S13_extreme_emergency_scene3_6km_simlingo.xml`
 - Voice package: `data/audio/S13/20260722/`
 - Bundle: `scenario_bundles/S13_extreme_emergency_scene3_6km/`
 
@@ -79,7 +79,7 @@ Voice triggers:
 - `1080 m`: sudden cut-in emergency
 - `2480 m`: construction merge left
 
-LMDrive route action alignment:
+SimLingo route action alignment:
 
 - Construction merge left: `2520-2555 m`
 - Return right lane change: `2650-2700 m`
@@ -92,4 +92,4 @@ python carla_eval/run_carla_s12_complex_obstacle_scene2.py --voice-overlay
 python carla_eval/run_carla_s13_extreme_emergency_scene3.py --voice-overlay
 ```
 
-S12/S13 的 LMDrive 交付路线用于 Leaderboard/LMDrive 导航对齐；当前自定义 evaluator 默认仍使用 dense design route，避免与场景控制器中的横向控制重复叠加。
+S12/S13 的 SimLingo 交付路线用于 Leaderboard/SimLingo 导航对齐；当前自定义 evaluator 默认仍使用 dense design route，避免与场景控制器中的横向控制重复叠加。

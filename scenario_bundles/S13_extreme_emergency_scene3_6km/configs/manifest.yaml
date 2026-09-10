@@ -6,17 +6,17 @@ carla_version: 0.9.15
 source:
   routes_file: routes/dongfeng_benchmark.xml
   annotations_file: configs/scenario_annotations/dongfeng_benchmark.yaml
-  voice_matches_file: configs/lmdrive/route_audio_matches.yaml
+  voice_matches_file: configs/simlingo/route_audio_matches.yaml
   scenario_config: configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml
 files:
   route_xml: routes/S13_extreme_emergency_scene3_6km.xml
   scenario_config: configs/S13_extreme_emergency_scene3_6km.yaml
   annotations: configs/S13_extreme_emergency_scene3_6km.annotations.yaml
   voice_matches: configs/route_audio_matches_S13_extreme_emergency_scene3_6km.yaml
-  lmdrive_route_xml: routes/S13_extreme_emergency_scene3_6km_lmdrive.xml
+  simlingo_route_xml: routes/S13_extreme_emergency_scene3_6km_simlingo.xml
   route_action_alignment: configs/route_action_alignment_S13_extreme_emergency_scene3_6km.yaml
   validation: validation/route_validation.json
-  lmdrive_validation: validation/lmdrive_route_validation.json
+  simlingo_validation: validation/simlingo_route_validation.json
 route:
   source_mode: carla_lane_trace
   exported_mode: route_xml
@@ -34,9 +34,9 @@ provenance:
   source_checksums_sha256:
     routes/dongfeng_benchmark.xml: 2c2cf8dc4f6c6036535a3731aac079ae24418306be9d7a2727d1a95d6f4d1bd2
     configs/scenario_annotations/dongfeng_benchmark.yaml: 31d4d280f8475a339b7862a7973d6f47ca0809a516e29f075d31bf30234d93d1
-    configs/lmdrive/route_audio_matches.yaml: 6c2511b974ed820f91fb91680d1ffa33b93076b9f3764285a6a5c1fc1be08e7a
+    configs/simlingo/route_audio_matches.yaml: 6c2511b974ed820f91fb91680d1ffa33b93076b9f3764285a6a5c1fc1be08e7a
     configs/scenarios/emergency_response/S13_extreme_emergency_scene3_6km.yaml: 2a9e2efb9840b9c6741c33cff492f6eac320de41638de58127cbb192f9beaf06
-    configs/lmdrive/route_action_alignment.yaml: 8834c3dcc93af1bfc6babbcbad0aeeeb6b6edf069a71d435241466d53b48135c
+    configs/simlingo/route_action_alignment.yaml: 8834c3dcc93af1bfc6babbcbad0aeeeb6b6edf069a71d435241466d53b48135c
 notes:
 - The source scenario YAML retains runtime route parameters for legacy CARLA runner
   compatibility; the bundle uses the selected route XML.

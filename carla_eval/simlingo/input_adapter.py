@@ -1,6 +1,6 @@
-"""Convert Dongfeng runner observations to LMDrive-style agent inputs.
+"""Convert Dongfeng runner observations to SimLingo-style agent inputs.
 
-The target field names follow LMDrive's official ``lmdriver_agent.py``:
+The target field names follow SimLingo's official ``simlingor_agent.py``:
 ``rgb_front``, ``rgb_left``, ``rgb_right``, ``rgb_rear``, ``lidar``,
 ``num_points``, ``velocity``, ``target_point`` and ``text_input``.
 """
@@ -32,11 +32,11 @@ def rotate_lidar(lidar: np.ndarray, angle_deg: float) -> np.ndarray:
 
 
 def lidar_to_raw_features(lidar: np.ndarray, max_points: int = 40000) -> Tuple[np.ndarray, int]:
-    """Match LMDrive's padded LiDAR tensor preprocessing.
+    """Match SimLingo's padded LiDAR tensor preprocessing.
 
     Input may be ``N x 3`` or ``N x 4``. Output is always ``max_points x 4``.
     Points inside the ego body box are removed, then the cloud is padded/truncated
-    and rotated by -90 degrees, mirroring LMDrive's official helper.
+    and rotated by -90 degrees, mirroring SimLingo's official helper.
     """
     if lidar is None:
         lidar_xyzi = np.zeros((0, 4), dtype=np.float32)
@@ -134,8 +134,8 @@ def _route_hint(input_data: Dict[str, Any], lookahead_m: float) -> Dict[str, Any
     }
 
 
-class LMDriveInputAdapter:
-    """Build the LMDrive-style tick/input dictionary from evaluator input data."""
+class SimLingoInputAdapter:
+    """Build the SimLingo-style tick/input dictionary from evaluator input data."""
 
     def __init__(self, route_lookahead_m: float = 30.0, max_lidar_points: int = 40000):
         self.route_lookahead_m = float(route_lookahead_m)
@@ -189,18 +189,18 @@ class LMDriveInputAdapter:
         }
 
 
-class LMDriveAgentAdapter(BaseAgent):
-    """Adapter shell for plugging a real LMDrive policy into this runner.
+class SimLingoAgentAdapter(BaseAgent):
+    """Adapter shell for plugging a real SimLingo policy into this runner.
 
-    ``policy`` can be any object exposing ``run_step(lmdrive_input, timestamp)`` or
-    ``predict(lmdrive_input)`` and returning either a dict/control object or a
+    ``policy`` can be any object exposing ``run_step(simlingo_input, timestamp)`` or
+    ``predict(simlingo_input)`` and returning either a dict/control object or a
     ``(throttle, brake, steer)`` tuple.
     """
 
-    def __init__(self, policy: Optional[Any] = None, adapter: Optional[LMDriveInputAdapter] = None):
+    def __init__(self, policy: Optional[Any] = None, adapter: Optional[SimLingoInputAdapter] = None):
         self.policy = policy
-        self.input_adapter = adapter or LMDriveInputAdapter()
-        self.last_lmdrive_input: Optional[Dict[str, Any]] = None
+        self.input_adapter = adapter or SimLingoInputAdapter()
+        self.last_simlingo_input: Optional[Dict[str, Any]] = None
 
     def sensors(self):
         from carla_eval.sensors.observation_builder import ObservationBuilder
@@ -214,16 +214,16 @@ class LMDriveAgentAdapter(BaseAgent):
         instruction: Optional[Dict[str, Any]] = None,
     ) -> Tuple[float, float, float]:
         start = time.time()
-        lmdrive_input = self.input_adapter.build(input_data, timestamp, instruction)
-        self.last_lmdrive_input = lmdrive_input
+        simlingo_input = self.input_adapter.build(input_data, timestamp, instruction)
+        self.last_simlingo_input = simlingo_input
 
         if self.policy is None:
-            raise RuntimeError("LMDriveAgentAdapter requires a real LMDrive policy object.")
+            raise RuntimeError("SimLingoAgentAdapter requires a real SimLingo policy object.")
 
         if hasattr(self.policy, "run_step"):
-            output = self.policy.run_step(lmdrive_input, timestamp)
+            output = self.policy.run_step(simlingo_input, timestamp)
         elif hasattr(self.policy, "predict"):
-            output = self.policy.predict(lmdrive_input)
+            output = self.policy.predict(simlingo_input)
         else:
             raise TypeError("policy must provide run_step(...) or predict(...)")
 
@@ -243,4 +243,4 @@ class LMDriveAgentAdapter(BaseAgent):
             )
         if all(hasattr(output, name) for name in ("throttle", "brake", "steer")):
             return float(output.throttle), float(output.brake), float(output.steer)
-        raise TypeError(f"Unsupported LMDrive policy output: {type(output)!r}")
+        raise TypeError(f"Unsupported SimLingo policy output: {type(output)!r}")
